@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "id": "statistics",
+  "name": "Statistics",
+  "targets": {
+    "beginner": [
+      "statistics.mean",
+      "statistics.variance"
+    ],
+    "mid": [
+      "statistics.correlation",
+      "statistics.probability"
+    ],
+    "advanced": [
+      "statistics.inference",
+      "statistics.correlation"
+    ]
+  },
+  "competencies": [
+    {
+      "id": "statistics.mean",
+      "name": "Mean",
+      "prerequisites": [],
+      "outcomes": {
+        "conceptual": [
+          "Explain averaging and sensitivity to outliers"
+        ],
+        "mathematical": [
+          "Derive the arithmetic mean and centering identity"
+        ],
+        "implementation": [
+          "Compute a mean without a high-level mean function"
+        ],
+        "interpretation": [
+          "Compare mean and median for skewed observations"
+        ],
+        "debugging": [
+          "Find an incorrect denominator or missing-value policy"
+        ],
+        "transfer": [
+          "Apply mean to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve mean after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Mean always describes a typical observation"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "statistics.variance",
+      "name": "Variance",
+      "prerequisites": [
+        "statistics.mean"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain dispersion around the mean"
+        ],
+        "mathematical": [
+          "Derive population and sample variance and explain degrees of freedom"
+        ],
+        "implementation": [
+          "Implement centered squared deviations"
+        ],
+        "interpretation": [
+          "Interpret squared units and compare dispersion"
+        ],
+        "debugging": [
+          "Debug ddof and catastrophic cancellation"
+        ],
+        "transfer": [
+          "Apply variance to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve variance after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Variance has the units of the original variable"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "statistics.covariance",
+      "name": "Covariance",
+      "prerequisites": [
+        "statistics.variance"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain joint variation after centering"
+        ],
+        "mathematical": [
+          "Derive covariance and explain sign and scaling"
+        ],
+        "implementation": [
+          "Implement covariance from centered arrays"
+        ],
+        "interpretation": [
+          "Interpret covariance without inferring causation"
+        ],
+        "debugging": [
+          "Detect mismatched pairs and incorrect centering"
+        ],
+        "transfer": [
+          "Apply covariance to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve covariance after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Covariance proves causality"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "statistics.correlation",
+      "name": "Correlation",
+      "prerequisites": [
+        "statistics.covariance"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain normalized linear association"
+        ],
+        "mathematical": [
+          "Derive correlation and its bounds"
+        ],
+        "implementation": [
+          "Compute correlation and handle constant inputs"
+        ],
+        "interpretation": [
+          "Identify nonlinear association and confounding"
+        ],
+        "debugging": [
+          "Debug division by zero and misaligned samples"
+        ],
+        "transfer": [
+          "Apply correlation to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve correlation after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Zero correlation means independence"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "statistics.probability",
+      "name": "Probability",
+      "prerequisites": [],
+      "outcomes": {
+        "conceptual": [
+          "Explain events and conditional probability"
+        ],
+        "mathematical": [
+          "Apply Bayes rule with explicit denominators"
+        ],
+        "implementation": [
+          "Simulate conditional events with a reproducible seed"
+        ],
+        "interpretation": [
+          "Interpret base rates and conditional probabilities"
+        ],
+        "debugging": [
+          "Find reversed conditionals and invalid event counts"
+        ],
+        "transfer": [
+          "Apply probability to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve probability after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "P(A given B) equals P(B given A)"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "statistics.inference",
+      "name": "Statistical inference",
+      "prerequisites": [
+        "statistics.probability",
+        "statistics.variance"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain sampling uncertainty"
+        ],
+        "mathematical": [
+          "Derive standard error under iid assumptions"
+        ],
+        "implementation": [
+          "Simulate confidence interval coverage"
+        ],
+        "interpretation": [
+          "Interpret intervals without claiming a posterior probability"
+        ],
+        "debugging": [
+          "Detect biased sampling and wrong standard errors"
+        ],
+        "transfer": [
+          "Apply statistical inference to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve statistical inference after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "A p-value is the probability the null is true"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    }
+  ],
+  "references": [
+    "https://www.itl.nist.gov/div898/handbook/"
+  ]
+}
