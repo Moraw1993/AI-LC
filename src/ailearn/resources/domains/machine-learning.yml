@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "id": "machine-learning",
+  "name": "Machine Learning",
+  "targets": {
+    "beginner": [
+      "machine_learning.validation"
+    ],
+    "mid": [
+      "machine_learning.linear_regression",
+      "machine_learning.logistic_regression"
+    ],
+    "advanced": [
+      "machine_learning.regularization"
+    ]
+  },
+  "competencies": [
+    {
+      "id": "machine_learning.validation",
+      "name": "Model validation",
+      "prerequisites": [
+        "statistics.inference"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain generalization and data leakage"
+        ],
+        "mathematical": [
+          "Define empirical risk and validation error"
+        ],
+        "implementation": [
+          "Implement reproducible train validation test splits"
+        ],
+        "interpretation": [
+          "Compare models to a defensible baseline"
+        ],
+        "debugging": [
+          "Find preprocessing fit on all observations"
+        ],
+        "transfer": [
+          "Apply model validation to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve model validation after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "High training accuracy guarantees generalization"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "machine_learning.linear_regression",
+      "name": "Linear regression",
+      "prerequisites": [
+        "statistics.correlation",
+        "machine_learning.validation"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain residuals and linear assumptions"
+        ],
+        "mathematical": [
+          "Derive least squares gradients"
+        ],
+        "implementation": [
+          "Implement gradient descent with a held-out evaluation"
+        ],
+        "interpretation": [
+          "Interpret coefficients and extrapolation limits"
+        ],
+        "debugging": [
+          "Detect leakage and unstable scaling"
+        ],
+        "transfer": [
+          "Apply linear regression to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve linear regression after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Regression coefficients imply causality"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "machine_learning.logistic_regression",
+      "name": "Logistic regression",
+      "prerequisites": [
+        "statistics.probability",
+        "machine_learning.validation"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain logits and classification thresholds"
+        ],
+        "mathematical": [
+          "Derive binary cross entropy and sigmoid gradients"
+        ],
+        "implementation": [
+          "Implement stable logistic prediction and loss"
+        ],
+        "interpretation": [
+          "Interpret calibration and class imbalance"
+        ],
+        "debugging": [
+          "Debug overflow and threshold selection on test data"
+        ],
+        "transfer": [
+          "Apply logistic regression to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve logistic regression after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "A classification score is always calibrated"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "machine_learning.regularization",
+      "name": "Regularization",
+      "prerequisites": [
+        "machine_learning.linear_regression",
+        "machine_learning.logistic_regression"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain complexity and bias variance tradeoffs"
+        ],
+        "mathematical": [
+          "Derive L1 and L2 penalties"
+        ],
+        "implementation": [
+          "Tune regularization using only validation observations"
+        ],
+        "interpretation": [
+          "Interpret underfitting and overfitting diagnostics"
+        ],
+        "debugging": [
+          "Detect hyperparameter tuning on test labels"
+        ],
+        "transfer": [
+          "Apply regularization to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve regularization after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Stronger regularization always improves a model"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    }
+  ],
+  "references": [
+    "https://scikit-learn.org/stable/common_pitfalls.html"
+  ]
+}

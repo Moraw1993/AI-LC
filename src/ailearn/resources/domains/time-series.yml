@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "id": "time-series",
+  "name": "Time Series",
+  "targets": {
+    "beginner": [
+      "time_series.autocorrelation"
+    ],
+    "mid": [
+      "time_series.stationarity",
+      "time_series.temporal_validation"
+    ],
+    "advanced": [
+      "time_series.ar_models"
+    ]
+  },
+  "competencies": [
+    {
+      "id": "time_series.temporal_validation",
+      "name": "Temporal validation",
+      "prerequisites": [
+        "machine_learning.validation"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain forecasting origin and horizon"
+        ],
+        "mathematical": [
+          "Define rolling origin error aggregation"
+        ],
+        "implementation": [
+          "Implement expanding-window validation"
+        ],
+        "interpretation": [
+          "Compare forecasts with a naive baseline"
+        ],
+        "debugging": [
+          "Find future features and shuffled temporal splits"
+        ],
+        "transfer": [
+          "Apply temporal validation to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve temporal validation after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "A random split is valid for every time series"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "time_series.autocorrelation",
+      "name": "Autocorrelation",
+      "prerequisites": [
+        "statistics.correlation"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain lagged association"
+        ],
+        "mathematical": [
+          "Derive lag-k autocovariance and normalization"
+        ],
+        "implementation": [
+          "Implement an ACF with an explicit denominator convention"
+        ],
+        "interpretation": [
+          "Interpret an ACF without inferring causality"
+        ],
+        "debugging": [
+          "Find lag indexing and normalization errors"
+        ],
+        "transfer": [
+          "Apply autocorrelation to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve autocorrelation after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "Autocorrelation proves causality"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "time_series.stationarity",
+      "name": "Stationarity",
+      "prerequisites": [
+        "time_series.autocorrelation"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain stable distributional properties"
+        ],
+        "mathematical": [
+          "Distinguish weak and strict stationarity"
+        ],
+        "implementation": [
+          "Experiment with differencing synthetic trends"
+        ],
+        "interpretation": [
+          "Interpret trend seasonality and changing variance"
+        ],
+        "debugging": [
+          "Find overdifferencing and misplaced transformations"
+        ],
+        "transfer": [
+          "Apply stationarity to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve stationarity after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "No obvious trend proves stationarity"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    },
+    {
+      "id": "time_series.ar_models",
+      "name": "Autoregressive models",
+      "prerequisites": [
+        "time_series.stationarity",
+        "time_series.temporal_validation",
+        "machine_learning.linear_regression"
+      ],
+      "outcomes": {
+        "conceptual": [
+          "Explain autoregressive dependence"
+        ],
+        "mathematical": [
+          "Derive AR(1) mean and stability condition"
+        ],
+        "implementation": [
+          "Fit an AR model using lagged design matrices"
+        ],
+        "interpretation": [
+          "Interpret residual ACF and forecast uncertainty"
+        ],
+        "debugging": [
+          "Detect off-by-one targets and recursive forecast leakage"
+        ],
+        "transfer": [
+          "Apply autoregressive models to an unseen problem and justify assumptions"
+        ],
+        "retention": [
+          "Retrieve autoregressive models after a delay without hints"
+        ]
+      },
+      "misconceptions": [
+        "A large training fit proves forecasting skill"
+      ],
+      "threshold": 3,
+      "assessment_strategies": [
+        "Independent explanation with a counterexample",
+        "Manual calculation and numerical sensor",
+        "Implementation or debugging with held-out cases",
+        "Unseen interpretation without teaching context"
+      ]
+    }
+  ],
+  "references": [
+    "https://otexts.com/fpp3/"
+  ]
+}
