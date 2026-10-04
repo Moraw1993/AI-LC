@@ -13,6 +13,23 @@ a LearningProfile and packs, creates `workspaces/<name>`, and atomically publish
 active course reference in the hub. Commands from the hub route to the active course;
 commands from the course work directly. Reusing a name requires the same profile and packs.
 
+The recommended entry point is `python /path/to/AI-LC-source/install.py --workspace PROJECT`.
+`installer.py` uses the standard library and temporary venv/pip to install the framework
+and dependencies into a staged runtime, initializes the hub, then publishes `.ai-lc/`.
+The installation manifest identifies source content and Python major/minor. Reinstalling
+an identical runtime preserves state; changed or incomplete installations fail without
+overwriting them. Cleanup is restricted to exact temporary directories under the project.
+If runtime publication fails after hub bootstrap, the valid hub is preserved; retry the
+installer. Runtime and learner snapshot publication are not a multi-file transaction.
+
+Every hub/course contains `.ai-learning/commands/ailearn.py`. The launcher binds to its
+workspace, finds the project-owned runtime in that directory or its ancestors and imports
+the CLI from there. No global ailearn, uv or activated environment is needed. A nested
+course shares the hub runtime. Missing/corrupt runtime and interpreter mismatch fail clearly.
+`schema MODEL` exposes harness contracts through the same local command, avoiding imports
+from an unknown interpreter environment. Global CLI remains for legacy integrations;
+development uses uv and keeps the Python reasoning/evidence boundary unchanged.
+
 `onboarding.py` gates modern course planning on a Baseline. Teacher gathers knowledge
 and genuine responses; independent Assessor records diagnostic evidence. The agreed
 diagnostic competencies must belong to the selected target's prerequisite closure.
