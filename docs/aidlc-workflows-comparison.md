@@ -58,7 +58,7 @@ Szacunki wysiłku są względne: **S** — niewielka zmiana dokumentacji/modelu,
 | Etap | Zakres | Warunek przejścia |
 | --- | --- | --- |
 | 1. Doprecyzowanie kontraktów | Uzgodnić definicję „istotnej zmiany planu”, capabilities harnessu i granice danych utrwalanych w historii | Przykładowe scenariusze pokazują brak dublowania evidence gates, `LearningProfile` i `history` |
-| 2. Mały prototyp R1 + R2 | Jeden profil przebiegu i wersjonowana propozycja planu z akceptacją; bez nowych ról i bez gotowej bankowej listy ćwiczeń | Testy potwierdzają, że żaden profil ani akceptacja nie omija baseline, zależności, niezależnej oceny, hint gates, regresji i powtórek |
+| 2. Mały prototyp R1 + R2 | Jeden profil przebiegu i wersjonowana propozycja planu z akceptacją; bez nowych ról i bez statycznego banku ćwiczeń | Testy potwierdzają, że żaden profil ani akceptacja nie omija baseline, zależności, niezależnej oceny, hint gates, regresji i powtórek |
 | 3. Kontrakt harnessu | Opisać wspólny protokół i capability manifest, dodać drugi adapter jako dowód przenośności | Ten sam scenariusz dostarcza równoważne briefy i dane dla Assessorów w obu harnessach |
 | 4. Migracje | Najpierw formalnie wersjonować snapshoty i pakiety, potem testować migrację kopii prawdziwych wersji | Dowody, audyt i pliki ucznia pozostają spójne; niejednoznaczne mapowania przerywają migrację bez utraty danych |
 | 5. Rozszerzenia i ergonomia | Rozszerzyć czujniki albo lifecycle sesji tylko tam, gdzie scenariusze wykazały realną potrzebę | Każdy nowy interfejs pozostaje deterministyczny, testowalny i bezpieczny dla danych ucznia |
