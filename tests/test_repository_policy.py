@@ -15,6 +15,8 @@ def test_forbidden_artifacts():
         "plans.md",
         ".test-tmp-review/state.json",
         ".uv-cache/data.py",
+        ".ai-lc/runtime/pydantic/__init__.py",
+        ".ai-lc-install-abcd/runtime/ailearn/cli.py",
         "audit/output.json",
         "audiot/results.txt",
         "dist-final/package.whl",

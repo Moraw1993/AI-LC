@@ -16,6 +16,7 @@ LOCAL_DIRS = {
     ".ruff_cache",
     ".uv-cache",
     ".ai-learning",
+    ".ai-lc",
     ".smoke",
     ".wheel-venv",
     ".tool-bin",
@@ -59,7 +60,7 @@ def forbidden(path: str) -> bool:
     parts = PurePosixPath(lower).parts
     if lower in LOCAL_FILES or lower.endswith(GENERATED_SUFFIXES):
         return True
-    if any(p in LOCAL_DIRS or p.startswith(".test-tmp") for p in parts[:-1]):
+    if any(p in LOCAL_DIRS or p.startswith((".test-tmp", ".ai-lc-install-")) for p in parts[:-1]):
         return True
     if parts[0].startswith("dist") and len(parts) > 1:
         return True

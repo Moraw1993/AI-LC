@@ -5,6 +5,8 @@ __pycache__/
 dist*/
 build/
 .ai-learning/
+.ai-lc/
+.ai-lc-install-*/
 *.egg-info/
 .uv-cache/
 .test-tmp*/
