@@ -70,7 +70,9 @@ class Store:
             raise ValueError("active workspace must remain inside the learning hub")
         course = Store(destination)
         if not (course.root / "state.json").is_file():
-            raise ValueError("active course snapshot is missing; preserve files and restore a backup")
+            raise ValueError(
+                "active course snapshot is missing; preserve files and restore a backup"
+            )
         course.load()  # An active course cannot silently turn back into neutral onboarding.
         return course
 
