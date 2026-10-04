@@ -81,7 +81,12 @@ def _review_progress(state: Snapshot, key: str, threshold: int) -> tuple[int, da
         if evidence.kind == "delayed-retrieval":
             review_step = min(review_step + 1, len(INTERVALS) - 1) if good else 0
             last_review = evidence.timestamp
-        elif evidence.independent and not good and last_review is not None:
+        elif (
+            evidence.kind not in NON_EVIDENCE
+            and evidence.independent
+            and not good
+            and last_review is not None
+        ):
             review_step = 0
         elif good and is_mastered and not was_mastered:
             review_step = 0

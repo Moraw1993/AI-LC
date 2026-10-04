@@ -102,6 +102,13 @@ def test_retention_delay_and_intervals(state):
     record(state, e, at=due)
     assert state.knowledge["statistics.mean"].review_due == due + timedelta(days=3)
     assert state.knowledge["statistics.mean"].stage != Stage.RETAINED
+    exposure_at = due + timedelta(seconds=1)
+    record(
+        state,
+        evidence(attempt="explanation", kind="explanation", timestamp=exposure_at),
+        at=exposure_at,
+    )
+    assert state.knowledge["statistics.mean"].review_step == 1
     due2 = state.knowledge["statistics.mean"].review_due
     failed = evidence(
         dimension=Dimension.RETENTION, attempt="failed", kind="delayed-retrieval", timestamp=due2
