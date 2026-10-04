@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import ValidationError
 from yaml import YAMLError
 
-from ailearn import __version__
+from ailearn import __version__, models
 from ailearn.data import SOURCES
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise, validate_artifacts
@@ -51,6 +51,11 @@ def parser() -> argparse.ArgumentParser:
     export = commands.add_parser("export", help="Print portable state or evidence JSONL")
     export.add_argument("--evidence-jsonl", action="store_true")
     commands.add_parser("sources", help="List authoritative data-source entry points")
+    schema = commands.add_parser("schema", help="Print a harness contract without external imports")
+    schema.add_argument(
+        "model",
+        choices=["LearningProfile", "Domain", "Baseline", "Evidence", "Exercise", "Snapshot"],
+    )
     return p
 
 
@@ -58,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         store = Store(args.workspace)
-        if args.command not in {"init", "configure", "domains", "sources", "sensors"}:
+        if args.command not in {"init", "configure", "domains", "sources", "sensors", "schema"}:
             store = store.active()
             if not (store.root / "state.json").exists():
                 if args.command in {"status", "plan", "session", "doctor"}:
@@ -76,6 +81,8 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "sources":
             print(dumps(SOURCES))
+        elif args.command == "schema":
+            print(dumps(getattr(models, args.model).model_json_schema()))
         elif args.command == "init":
             created = store.bootstrap()
             print(

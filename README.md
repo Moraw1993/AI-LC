@@ -10,32 +10,49 @@ model SDK, web server or autonomous chat runtime is required.
 
 ## Installation
 
-Python 3.12+ and [uv](https://docs.astral.sh/uv/) are required for the recommended workflow.
-From this checkout:
+The recommended installation is **project-local**, like AI-DLC: role instructions,
+Codex skills and executable helpers live in the learning project. Python 3.12+ with
+`venv`/`ensurepip` and Git are required. No uv, global AI-LC installation, environment
+activation or PATH modification is needed for learning commands.
+
+Download the framework once, then install into your learning directory:
 
 ```sh
-uv sync
-uv run ailearn --help
-uv tool install .
+git clone --branch develop --single-branch https://github.com/Moraw1993/AI-LC.git AI-LC-source
+python AI-LC-source/install.py --workspace /path/to/learning-project
 ```
 
-The distribution is `ai-learning-lifecycle`; the executable is `ailearn`. The package has
-not been published to PyPI. The source repository is
-[Moraw1993/AI-LC](https://github.com/Moraw1993/AI-LC). For the development branch:
+Replace the example path with your learning directory; on Windows a path such as
+`C:/Users/Arek/learning/my-course` works. Installation downloads dependencies once using
+temporary pip, places the framework and dependencies in `.ai-lc/runtime`, installs the
+local launcher and Codex skills, and initializes a **subject-neutral** hub. Temporary
+installation files are removed. Existing project files and root AGENTS.md are preserved.
+
+In the installed learning directory, commands run directly from the project:
 
 ```sh
-uv tool install git+https://github.com/Moraw1993/AI-LC.git@develop
+python .ai-learning/commands/ailearn.py status
+python .ai-learning/commands/ailearn.py doctor
 ```
 
-This repository is exclusively for implementation and development. Initialize learner
-workspaces in a separate directory outside the checkout.
+Use the same Python major/minor version that installed the project; compiled dependencies
+are tied to that interpreter and platform. After installation the source checkout, network
+and package managers are not needed for framework commands. Image tools and source browsing
+may still need their own services. An identical reinstall preserves state; different source
+or interpreter versions fail clearly rather than silently upgrading existing project files.
+
+The distribution is `ai-learning-lifecycle` and is not published to PyPI. Source:
+[Moraw1993/AI-LC](https://github.com/Moraw1993/AI-LC). A global `ailearn` executable remains
+available to legacy integrations, but project-local commands are recommended for Codex.
+Use [uv](https://docs.astral.sh/uv/) for **framework development and tests** in this checkout.
+Learning projects belong in a separate directory outside it.
 
 ## Quick start
 
-In an empty learning directory outside this checkout, using the installed tool:
+Installation already initializes the hub. To check or resume it from the learning directory:
 
 ```sh
-ailearn init
+python .ai-learning/commands/ailearn.py status
 ```
 
 Open that directory in Codex and invoke **`$ai-lc-master`**. Master discusses what you
@@ -44,20 +61,22 @@ pace and style. Together you choose the tutor's display name and course workspac
 Initialization chooses **no subject, level or learning path**.
 
 The neutral hub contains `.ai-learning/bootstrap.json`, six role instructions, shared
-policy and six discoverable skills under `.agents/skills`. Codex discovers skills from
+policy, `.ai-learning/commands/ailearn.py` and six discoverable skills under `.agents/skills`.
+Codex discovers skills from
 that directory; see [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
 AI-LC supplies logical roles and skills, not a native Codex agent registration or model
 runtime. The tutor's chosen name lives in the agreed profile.
 
 Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
-`ailearn configure profile.json [--packs packs]`, creating `workspaces/<agreed-name>`.
+`python .ai-learning/commands/ailearn.py configure profile.json [--packs packs]`, creating
+`workspaces/<agreed-name>`.
 Teacher then gathers relevant prerequisite knowledge and current ability through small
 diagnostics; independent Assessor records genuine answers. A failed answer such as
 "I don't know" establishes a gap, not mastery. Explaining the answer switches to teaching;
 that attempt cannot be counted as independent.
 
-Only after `ailearn complete-intake baseline.json` verifies diagnostic coverage can the
-Curriculum Architect build a lesson roadmap. Master then uses `ailearn plan` and `session`.
+Only after the local `complete-intake baseline.json` command verifies diagnostic coverage
+can the Curriculum Architect build a lesson roadmap. Master then uses local `plan` and `session`.
 Starter packs are optional examples; the external AI can author validated packs for other
 subjects. The lesson sequence adapts to evidence, prerequisites and the agreed goal.
 
@@ -66,7 +85,10 @@ Root `AGENTS.md` is created only if absent. When instructions already exist, loa
 An identical course profile preserves its state; changing an existing profile or its
 packs fails safely. Use a new workspace name for a different course.
 
-Use `ailearn --workspace /path/to/learning COMMAND` to address another directory.
+The local launcher binds commands to its own workspace, even from another working directory
+when called by absolute path. Course-local launchers inherit the hub's runtime. Use
+`python .ai-learning/commands/ailearn.py --workspace /path/to/learning COMMAND` for an
+explicit override (before the command).
 Hub commands route to its active course; `status` includes that course's path. After failure,
 the next task becomes remediation. After sufficient independent evidence, the roadmap
 advances. Due reviews preempt new material; transfer tasks follow the core gates.
@@ -84,7 +106,7 @@ and animated explanations or motion-design videos. Image and video rendering dep
 the harness's available tools; the skills do not install services. When a video renderer
 is unavailable, use a standalone HTML animation or an explicitly labeled storyboard.
 
-Lab Coach uses `$ai-lc-python-lab` and `ailearn exercise spec.json` to create fresh tasks
+Lab Coach uses `$ai-lc-python-lab` and the local `exercise spec.json` command to create fresh tasks
 of at most 80 lines, including instructions. Each attempt has its own file, for example
 `lessons/lesson_001_topic_002_attempt_003_statistics_mean.py`. Existing attempts are never
 overwritten. The returned ID, such as `L001-T002-A003`, and path are required for modern
@@ -100,7 +122,7 @@ toward autocorrelation. See [the runnable example](examples/time_series.py).
 Assessor produces JSON matching `ailearn.models.Evidence`. Print its complete contract with:
 
 ```sh
-uv run python -c "import json; from ailearn.models import Evidence; print(json.dumps(Evidence.model_json_schema(), indent=2))"
+python .ai-learning/commands/ailearn.py schema Evidence
 ```
 
 An example of one independent result (not enough alone for mastery):
@@ -123,9 +145,9 @@ An example of one independent result (not enough alone for mastery):
 ```
 
 ```sh
-ailearn record result.json
-ailearn status
-ailearn session
+python .ai-learning/commands/ailearn.py record result.json
+python .ai-learning/commands/ailearn.py status
+python .ai-learning/commands/ailearn.py session
 ```
 
 Results are trusted assessor submissions; AI-LC does not authenticate assessor identity or
@@ -133,6 +155,9 @@ verify answer semantics. Modern implementation submissions must match a register
 the CLI also checks registered files exist. Preserve other referenced artifacts yourself.
 
 ## CLI
+
+Run these through `python .ai-learning/commands/ailearn.py COMMAND`. Installed skills
+use this same local entry point; no global executable or imports from another environment.
 
 | Command | Purpose |
 | --- | --- |
@@ -150,6 +175,7 @@ the CLI also checks registered files exist. Preserve other referenced artifacts 
 | `export --evidence-jsonl` | Print full portable state or evidence lines |
 | `sensors FILE` | Run structured checks without executing code |
 | `sources` | List official dataset entry points |
+| `schema MODEL` | Print LearningProfile, Domain, Baseline, Evidence, Exercise or Snapshot JSON schema |
 
 Scopes: learn, deep-learn, review, remediate, practice, assessment, project, explore.
 Explicit scope selection does not bypass prerequisite routing. Explore permits exposure
@@ -207,9 +233,15 @@ Existing `.ai-learning/state.json` snapshots remain readable without rewriting o
 inventing an intake baseline. Their previous evidence rules remain unchanged. The CLI's
 old topic flags on `init` have been replaced by Master-led `configure`; use `init` in a
 new directory for the new conversation-first flow. Re-running `init` in an old course
-adds skills while preserving its snapshot and instructions. Existing conflicting skill
+adds local helpers and skills while preserving its snapshot and instructions. The project
+installer can attach runtime to an existing course when its packaged files match; it
+does not silently replace older or edited skills/commands. Existing conflicting skill
 files fail clearly and are preserved. The internal `Store.init(Config, domains)` API
 remains available for legacy integrations and the deterministic runnable example.
+
+Keep `.ai-lc/`, `.ai-lc-install-*/`, `.ai-learning/`, learner artifacts and personal answers
+out of version control. AI-LC does not rewrite an existing project's .gitignore; add these
+entries yourself if the learning directory is a repository.
 
 ## v0.1 boundaries
 

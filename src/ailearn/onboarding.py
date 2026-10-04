@@ -13,7 +13,8 @@ def onboarding_brief() -> dict:
         "instructions": "Ask what the learner wants to learn and why. Establish the target "
         "ability, prior experience, language, working style, tutor name and workspace name. "
         "Do not select a default topic or build a roadmap. Save explicit decisions in a "
-        "LearningProfile and use ailearn configure profile.json. Then diagnose knowledge "
+        "LearningProfile and use python .ai-learning/commands/ailearn.py configure profile.json. "
+        "Then diagnose knowledge "
         "needed for the first lesson before completing intake.",
     }
 
@@ -41,7 +42,8 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
         "instructions": "Teacher gathers prior experience and asks short baseline questions. "
         "Assessor evaluates genuine responses as diagnostic evidence without hints. 'I do "
         "not know' can be a genuine failed diagnostic. Do not teach during the independent "
-        "attempt or invent results. Record the baseline with ailearn complete-intake "
+        "attempt or invent results. Record the baseline with "
+        "python .ai-learning/commands/ailearn.py complete-intake "
         "report.json before planning lessons. If coaching is requested, label the switch "
         "and collect a fresh independent diagnostic afterwards.",
     }

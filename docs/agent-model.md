@@ -14,6 +14,11 @@ Agents are an external-harness integration, not Python objects pretending to rea
 `init` installs `$ai-lc-master` plus five teaching skills under `.agents/skills`, selecting
 no subject or level. The Master-created LearningProfile stores the tutor's display name;
 it is not a native Codex agent registration. Bootstrap has no learner evidence.
+
+Recommended setup installs runtime, skills and helpers inside the project using install.py.
+Role instructions invoke `python .ai-learning/commands/ailearn.py COMMAND`; schema contracts
+are read with `schema MODEL`. Codex needs no uv, globally installed executable or environment
+activation. The course launcher uses the parent hub's runtime and binds its own workspace.
 A harness may use separate model calls or isolated subagents. Logical isolation is required
 for assessment: pass the learner response, task, rubric, hint log and sensor outputs, not
 the Teacher's confidence that the learner understands.
