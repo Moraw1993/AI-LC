@@ -6,7 +6,7 @@ description: Diagnose an AI-LC learner's prerequisite knowledge and current abil
 # Diagnose before planning
 
 Read `.ai-learning/agents/common.md`, `teacher.md`, and `assessor.md` in the active course.
-Run `python .ai-learning/commands/ailearn.py status` and `session` with its workspace path. Read the agreed intake profile,
+Run `ailearn status` and `session` with its workspace path. Read the agreed intake profile,
 diagnostic competencies and outcome/rubric definitions. Do not plan lessons before baseline.
 
 Gather relevant experience, then ask one small fresh question at a time: explanation,
@@ -24,12 +24,12 @@ to teaching, record hints/exposure, and later ask a fresh unhinted diagnostic.
 
 Save actual answers in a course-relative artifact. Independent Assessor produces Evidence
 JSON according to `ailearn.models.Evidence`, kind diagnostic, genuine independence and
-hint count, and an honest confidence. Record using `python .ai-learning/commands/ailearn.py record result.json`.
+hint count, and an honest confidence. Record using `ailearn record result.json`.
 Python diagnostic tasks must use `$ai-lc-python-lab`; reference their registered path
 and LNNN-TNNN-ANNN attempt ID for implementation evidence.
 
 Once all agreed competencies have qualifying independent, unhinted diagnostic results
 (including genuine failures), save a Baseline JSON with `summary` and `evidence_ids`.
 Explain demonstrated strengths, gaps and uncertainty; never invent scores or answers.
-Run `python .ai-learning/commands/ailearn.py complete-intake baseline.json`. Only then ask Curriculum Architect to
+Run `ailearn complete-intake baseline.json`. Only then ask Curriculum Architect to
 recompose the plan. A baseline records a starting point; mastery still needs its usual gates.

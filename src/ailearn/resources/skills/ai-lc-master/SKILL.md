@@ -7,7 +7,7 @@ description: Start or coordinate AI-LC learning after project installation. Use 
 
 Read `.ai-learning/agents/common.md` and `master.md`. This is a logical agent role;
 the agreed tutor name is a display identity, not a native Codex agent registration.
-Run `python .ai-learning/commands/ailearn.py status` in the initialized hub, or use `--workspace HUB` before the command.
+Run `ailearn status` in the initialized hub, or use `--workspace HUB` before the command.
 Use the returned active course path for artifacts and course-local commands.
 
 If phase is intent-discovery, start a short conversation in the learner's language:
@@ -25,22 +25,22 @@ Delegate competency modeling to Curriculum Architect after goal agreement. Built
 packs are starter examples, not a mandatory list of subjects. For any other topic,
 generate a fresh YAML domain pack under the hub's `packs/`, using the installed
 `ailearn.models.Domain` schema and its target/dependency conventions. Validate using
-`python .ai-learning/commands/ailearn.py configure profile.json --packs packs`. Never add a static exercise bank.
+`ailearn configure profile.json --packs packs`. Never add a static exercise bank.
 Select a small nonempty set of diagnostic competencies from the goal's prerequisite
 closure needed to establish a useful starting point. This is assessment scoping,
 not a lesson roadmap. Adapt the probe set in conversation before configuration if needed.
 
-Read `python .ai-learning/commands/ailearn.py schema LearningProfile`. Save the explicitly
+Read `ailearn schema LearningProfile`. Save the explicitly
 agreed fields in `profile.json`: learner, goal, domain, target, target_description, depth,
 workspace_name (lowercase letters/digits/hyphens), agent_name, language, working_style
 (nonempty list), prior_knowledge and diagnostic_competencies (nonempty list).
-Run `python .ai-learning/commands/ailearn.py configure profile.json` from the hub, adding `--packs packs` for custom packs.
+Run `ailearn configure profile.json` from the hub, adding `--packs packs` for custom packs.
 The command creates `workspaces/<workspace_name>` and activates it; repeating an
 identical profile preserves progress. Never edit state.json manually.
 
 Invoke `$ai-lc-diagnose` before constructing a lesson plan. Gather genuine responses;
-use independent Assessor to record them and complete intake. Then run `python .ai-learning/commands/ailearn.py plan`
-and `python .ai-learning/commands/ailearn.py session`, delegate only required roles, and keep returning to the agreed goal.
+use independent Assessor to record them and complete intake. Then run `ailearn plan`
+and `ailearn session`, delegate only required roles, and keep returning to the agreed goal.
 Teacher may use materials, visualization and motion skills; Lab Coach creates short
 numbered Python tasks through `$ai-lc-python-lab`. Actual tool availability determines media.
 

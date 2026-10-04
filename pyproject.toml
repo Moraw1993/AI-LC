@@ -15,7 +15,7 @@ dependencies = ["pydantic>=2.10,<3", "PyYAML>=6,<7"]
 ailearn = "ailearn.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "pyinstaller>=6.16,<7"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ailearn"]

@@ -93,3 +93,18 @@ and disallow bypasses where the account plan permits. Require review approval if
 separate reviewer account is available. These repository files do not themselves enable
 GitHub branch protection or restrict repository administrators. Tag creation after a
 release merge is a required release step, not an automatic action in this version.
+
+## Native release artifacts
+
+Development uses uv; release users do not. `uv run python scripts/build_native.py`
+builds a PyInstaller executable for the current platform and writes its SHA256 file.
+The native-release PR workflow builds all supported platform assets and smoke-tests
+packaged domains, neutral configuration and installers. Require all native jobs before
+integration. On an annotated release tag matching the package version, the same workflow
+publishes a GitHub release only after native checks and verification that the tagged
+commit belongs to main. Publishing this release workflow requires explicit release
+authorization; ordinary feature merges never create tags or releases.
+
+Installer verification can use `-ReleaseDirectory dist -Version vX.Y.Z -NoModifyPath`
+on Windows, or `RELEASE_DIRECTORY`, `VERSION`, `AILEARN_INSTALL_ROOT`, `AILEARN_BIN_DIR`
+on Unix. These support offline validation without changing the actual user installation.

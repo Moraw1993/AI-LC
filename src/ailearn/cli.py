@@ -25,6 +25,8 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--workspace", type=Path, default=Path.cwd())
     commands = p.add_subparsers(dest="command", required=True)
     commands.add_parser("init", help="Install Master and teaching skills without choosing a topic")
+    config = commands.add_parser("config", help="Configure a topic-neutral harness workspace")
+    config.add_argument("--harness", required=True, choices=["codex"])
     configure = commands.add_parser(
         "configure", help="Create a course from Master's agreed profile"
     )
@@ -62,6 +64,12 @@ def parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
+        if args.command == "config":
+            from ailearn.harness import configure_codex
+
+            configure_codex(args.workspace)
+            print("Codex configured. Invoke $ai-lc-master to discuss your learning goal.")
+            return 0
         store = Store(args.workspace)
         if args.command not in {"init", "configure", "domains", "sources", "sensors", "schema"}:
             store = store.active()

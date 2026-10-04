@@ -10,49 +10,45 @@ model SDK, web server or autonomous chat runtime is required.
 
 ## Installation
 
-The recommended installation is **project-local**, like AI-DLC: role instructions,
-Codex skills and executable helpers live in the learning project. Python 3.12+ with
-`venv`/`ensurepip` and Git are required. No uv, global AI-LC installation, environment
-activation or PATH modification is needed for learning commands.
+Use a release installer. The installed `ailearn` executable includes Python, dependencies,
+domain packs and teaching instructions. No Python, uv, Git or environment activation is
+required for release users. Install once per user and configure each learning project.
 
-Download the framework once, then install into your learning directory:
+Windows PowerShell:
 
-```sh
-git clone --branch develop --single-branch https://github.com/Moraw1993/AI-LC.git AI-LC-source
-python AI-LC-source/install.py --workspace /path/to/learning-project
+```powershell
+irm https://github.com/Moraw1993/AI-LC/releases/latest/download/install.ps1 | iex
 ```
 
-Replace the example path with your learning directory; on Windows a path such as
-`C:/Users/Arek/learning/my-course` works. Installation downloads dependencies once using
-temporary pip, places the framework and dependencies in `.ai-lc/runtime`, installs the
-local launcher and Codex skills, and initializes a **subject-neutral** hub. Temporary
-installation files are removed. Existing project files and root AGENTS.md are preserved.
-
-In the installed learning directory, commands run directly from the project:
+Linux/macOS (curl and a SHA256 utility are required):
 
 ```sh
-python .ai-learning/commands/ailearn.py status
-python .ai-learning/commands/ailearn.py doctor
+curl -fsSL https://github.com/Moraw1993/AI-LC/releases/latest/download/install.sh | sh
 ```
 
-Use the same Python major/minor version that installed the project; compiled dependencies
-are tied to that interpreter and platform. After installation the source checkout, network
-and package managers are not needed for framework commands. Image tools and source browsing
-may still need their own services. An identical reinstall preserves state; different source
-or interpreter versions fail clearly rather than silently upgrading existing project files.
+Windows adds `%LOCALAPPDATA%/AI-LC/bin` to User PATH; open a new terminal afterwards.
+Linux/macOS defaults to `~/.local/bin`; add it to PATH if needed. Downloads are checked
+against the release SHA256 files before execution. Checksums detect corruption; they do
+not replace trust in the release publisher. Windows x64, Linux x64/arm64 and macOS
+x64/arm64 assets are built and tested on their respective runners.
 
-The distribution is `ai-learning-lifecycle` and is not published to PyPI. Source:
-[Moraw1993/AI-LC](https://github.com/Moraw1993/AI-LC). A global `ailearn` executable remains
-available to legacy integrations, but project-local commands are recommended for Codex.
-Use [uv](https://docs.astral.sh/uv/) for **framework development and tests** in this checkout.
-Learning projects belong in a separate directory outside it.
+To pin a release, download its installer and pass `-Version v0.2.0` on Windows, or set
+`VERSION=v0.2.0` for the shell installer. Reinstalling an identical version preserves it;
+a differing existing version fails. Installing a newer release switches the command,
+without rewriting learning state or project instructions. Re-run project configuration;
+conflicting project resources fail clearly and must be reconciled explicitly.
+
+The older `python AI-LC-source/install.py --workspace PROJECT` path remains available
+for existing integrations and requires Python 3.12+. Its project-local launcher is an
+alternative; release users should use `ailearn` directly.
 
 ## Quick start
 
-Installation already initializes the hub. To check or resume it from the learning directory:
+From a separate learning directory, configure Codex and check the neutral hub:
 
 ```sh
-python .ai-learning/commands/ailearn.py status
+ailearn config --harness codex
+ailearn status
 ```
 
 Open that directory in Codex and invoke **`$ai-lc-master`**. Master discusses what you
@@ -68,7 +64,7 @@ AI-LC supplies logical roles and skills, not a native Codex agent registration o
 runtime. The tutor's chosen name lives in the agreed profile.
 
 Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
-`python .ai-learning/commands/ailearn.py configure profile.json [--packs packs]`, creating
+`ailearn configure profile.json [--packs packs]`, creating
 `workspaces/<agreed-name>`.
 Teacher then gathers relevant prerequisite knowledge and current ability through small
 diagnostics; independent Assessor records genuine answers. A failed answer such as
@@ -85,10 +81,14 @@ Root `AGENTS.md` is created only if absent. When instructions already exist, loa
 An identical course profile preserves its state; changing an existing profile or its
 packs fails safely. Use a new workspace name for a different course.
 
-The local launcher binds commands to its own workspace, even from another working directory
-when called by absolute path. Course-local launchers inherit the hub's runtime. Use
-`python .ai-learning/commands/ailearn.py --workspace /path/to/learning COMMAND` for an
-explicit override (before the command).
+Release commands use the current directory. From elsewhere use
+`ailearn --workspace /absolute/path/to/learning COMMAND` (before the command).
+`config --harness codex` installs native skills and a separate `.codex/rules/ai-lc.rules`
+file allowing deterministic read commands. Existing Codex config, sandbox settings,
+other permission rules and root AGENTS.md are preserved. No hooks, credentials or
+provider configuration are installed. Permission rules do not grant filesystem access.
+The configuration is repeatable and does not select a learning topic.
+
 Hub commands route to its active course; `status` includes that course's path. After failure,
 the next task becomes remediation. After sufficient independent evidence, the roadmap
 advances. Due reviews preempt new material; transfer tasks follow the core gates.
@@ -122,7 +122,7 @@ toward autocorrelation. See [the runnable example](examples/time_series.py).
 Assessor produces JSON matching `ailearn.models.Evidence`. Print its complete contract with:
 
 ```sh
-python .ai-learning/commands/ailearn.py schema Evidence
+ailearn schema Evidence
 ```
 
 An example of one independent result (not enough alone for mastery):
@@ -145,9 +145,9 @@ An example of one independent result (not enough alone for mastery):
 ```
 
 ```sh
-python .ai-learning/commands/ailearn.py record result.json
-python .ai-learning/commands/ailearn.py status
-python .ai-learning/commands/ailearn.py session
+ailearn record result.json
+ailearn status
+ailearn session
 ```
 
 Results are trusted assessor submissions; AI-LC does not authenticate assessor identity or
@@ -156,8 +156,7 @@ the CLI also checks registered files exist. Preserve other referenced artifacts 
 
 ## CLI
 
-Run these through `python .ai-learning/commands/ailearn.py COMMAND`. Installed skills
-use this same local entry point; no global executable or imports from another environment.
+Run these through `ailearn COMMAND`. Installed skills use the same executable.
 
 | Command | Purpose |
 | --- | --- |

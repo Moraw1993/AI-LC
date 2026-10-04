@@ -13,22 +13,26 @@ a LearningProfile and packs, creates `workspaces/<name>`, and atomically publish
 active course reference in the hub. Commands from the hub route to the active course;
 commands from the course work directly. Reusing a name requires the same profile and packs.
 
-The recommended entry point is `python /path/to/AI-LC-source/install.py --workspace PROJECT`.
-`installer.py` uses the standard library and temporary venv/pip to install the framework
-and dependencies into a staged runtime, initializes the hub, then publishes `.ai-lc/`.
-The installation manifest identifies source content and Python major/minor. Reinstalling
-an identical runtime preserves state; changed or incomplete installations fail without
-overwriting them. Cleanup is restricted to exact temporary directories under the project.
-If runtime publication fails after hub bootstrap, the valid hub is preserved; retry the
-installer. Runtime and learner snapshot publication are not a multi-file transaction.
+Release distribution uses PyInstaller to bundle Python, dependencies and all ailearn
+resources into one executable per OS/architecture. `scripts/build_native.py` verifies
+the binary version and domain loading and writes SHA256 files. Tag builds validate the
+package/tag version and publish binaries plus native shell/PowerShell installers.
+Installers check checksums and executable versions before publishing immutable version
+directories and selecting the user command. They never rewrite learner state.
 
-Every hub/course contains `.ai-learning/commands/ailearn.py`. The launcher binds to its
-workspace, finds the project-owned runtime in that directory or its ancestors and imports
-the CLI from there. No global ailearn, uv or activated environment is needed. A nested
-course shares the hub runtime. Missing/corrupt runtime and interpreter mismatch fail clearly.
-`schema MODEL` exposes harness contracts through the same local command, avoiding imports
-from an unknown interpreter environment. Global CLI remains for legacy integrations;
-development uses uv and keeps the Python reasoning/evidence boundary unchanged.
+`ailearn config --harness codex` installs a subject-neutral hub, six logical roles and
+six native skills, plus `.codex/rules/ai-lc.rules` for deterministic read commands.
+Existing Codex config.toml, sandbox settings and root AGENTS.md stay untouched.
+Conflicting rules/resources fail; no provider settings or hooks are needed. Each file
+publication is atomic, but hub bootstrap and rules are not a multi-file transaction.
+A failed configuration can leave a valid hub; repeating the command safely completes it.
+
+The legacy project-local installer remains compatible: `install.py` and `installer.py`
+use temporary venv/pip to stage `.ai-lc/runtime`, with source/interpreter manifests.
+Its `.ai-learning/commands/ailearn.py` launcher binds to its course/hub and discovers the
+ancestor runtime. Legacy users substitute that command for `ailearn` when no global
+command exists. Release usage requires no installed Python or uv; development uses uv.
+`schema MODEL` exposes contracts without imports in an unknown interpreter.
 
 `onboarding.py` gates modern course planning on a Baseline. Teacher gathers knowledge
 and genuine responses; independent Assessor records diagnostic evidence. The agreed
