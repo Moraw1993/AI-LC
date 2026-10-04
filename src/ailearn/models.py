@@ -170,6 +170,7 @@ class Evidence(Model):
         "self-report",
     ] = "assessment"
     timestamp: datetime = Field(default_factory=now)
+    supersedes_id: str | None = Field(default=None, min_length=1, max_length=100)
     notes: str = ""
     misconceptions: list[str] = Field(default_factory=list)
     resolves: list[str] = Field(default_factory=list)
@@ -216,3 +217,31 @@ class Snapshot(Model):
     session: dict = Field(default_factory=dict)
     intake: Intake | None = None
     exercises: list[ExerciseArtifact] = Field(default_factory=list)
+
+
+def active_evidence(snapshot: Snapshot) -> list[Evidence]:
+    """Return current judgments and validate append-only revision links."""
+    by_id: dict[str, Evidence] = {}
+    replaced: set[str] = set()
+    pair_heads: dict[tuple[str, Dimension], Evidence] = {}
+    ordered: list[Evidence] = []
+    for evidence in snapshot.evidence:
+        if evidence.id in by_id:
+            raise ValueError(f"duplicate evidence ID: {evidence.id}")
+        key = (evidence.attempt_id, evidence.dimension)
+        prior = pair_heads.get(key)
+        if prior is None:
+            if evidence.supersedes_id is not None:
+                raise ValueError(
+                    "replacement references evidence from another attempt or dimension"
+                )
+        elif evidence.supersedes_id != prior.id:
+            raise ValueError(
+                "duplicate attempt/dimension; replacement must supersede its active evidence"
+            )
+        else:
+            replaced.add(prior.id)
+        by_id[evidence.id] = evidence
+        pair_heads[key] = evidence
+        ordered.append(evidence)
+    return [evidence for evidence in ordered if evidence.id not in replaced]
