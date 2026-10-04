@@ -106,6 +106,7 @@ class Store:
                 self.load()
             else:
                 self.bootstrap_state()
+            self._install_commands(self.root)
             self._install_skills()
             return False
         self.workspace.mkdir(parents=True, exist_ok=True)
@@ -153,6 +154,7 @@ class Store:
         return course
 
     def _resources(self, stage: Path) -> None:
+        self._install_commands(stage)
         (stage / "agents").mkdir()
         for resource in files("ailearn").joinpath("resources/agents").iterdir():
             if resource.name.endswith(".md"):
@@ -160,6 +162,20 @@ class Store:
         (stage / "AGENTS.md").write_text(
             files("ailearn").joinpath("resources/AGENTS.md").read_text("utf-8"), "utf-8"
         )
+
+    def _install_commands(self, root: Path) -> None:
+        directory = root / "commands"
+        destination = directory / "ailearn.py"
+        if directory.is_symlink() or directory.is_junction() or destination.is_symlink():
+            raise ValueError("local command path cannot be redirected")
+        content = files("ailearn").joinpath("resources/commands/ailearn.py").read_text("utf-8")
+        if destination.exists():
+            if destination.read_text("utf-8") != content:
+                raise ValueError("existing local command differs; preserved")
+            return
+        directory.mkdir(exist_ok=True)
+        with destination.open("x", encoding="utf-8") as stream:
+            stream.write(content)
 
     def _root_instructions(self) -> None:
         try:

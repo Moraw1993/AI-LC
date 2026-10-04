@@ -22,7 +22,7 @@ packages = ["src/ailearn"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/docs", "/examples", "/README.md", "/CONTRIBUTING.md",
-           "/LICENSE", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.github", "/scripts"]
+           "/LICENSE", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.github", "/scripts", "/install.py"]
 exclude = ["/docs/plan-review.md", "/docs/verification.md", "**/__pycache__/**"]
 
 [tool.pytest.ini_options]
