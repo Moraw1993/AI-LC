@@ -29,3 +29,5 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv build
       - run: uv run python examples/time_series.py
+      - run: uv run python install.py --workspace .test-tmp-install-smoke
+      - run: uv run python .test-tmp-install-smoke/.ai-learning/commands/ailearn.py doctor

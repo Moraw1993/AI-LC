@@ -16,10 +16,20 @@ built-in packs or other custom packs loaded together. Duplicate packs or compete
 cannot override built-ins. Missing dependencies and cycles are errors.
 
 ```sh
-ailearn init --domain optimization --packs ./my-packs --target mid
+# ailearn config --harness codex initializes a neutral hub.
+# Master agrees an optimization profile after discussing the learner's goal.
+ailearn schema Domain
+ailearn configure profile.json --packs ./my-packs
 ```
 
-Packs are validated and embedded in the initialized snapshot. v0.1 has no in-place pack
+The subject is not selected at init. Master and Curriculum Architect can author a pack
+for any agreed topic; built-ins are starter examples. The profile supplies domain, explicit
+target/depth and a small nonempty diagnostic competency subset from the target closure.
+Map the learner's concrete desired ability to outcomes rather than imposing an arbitrary
+target label. Competency modeling for diagnosis precedes lessons; curriculum design waits
+for actual baseline evidence. No static exercise bank is permitted.
+
+Packs are validated and embedded in the configured course snapshot. v0.1 has no in-place pack
 migration; use a separate workspace when changing curriculum structure. Do not manually
 rewrite snapshot packs in an active workspace.
 

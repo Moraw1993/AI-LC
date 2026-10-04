@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 from ailearn.graph import Graph, required
 from ailearn.models import Dimension, Evidence, Knowledge, Scope, Snapshot, Stage, now
+from ailearn.onboarding import diagnostic_brief
 
 INTERVALS = (1, 3, 7, 14, 30, 60)
 NON_EVIDENCE = {"explanation", "self-report"}
@@ -55,6 +56,18 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
         raise ValueError(f"unknown competency: {evidence.competency}")
     if state.session.get("scope") == "explore" and evidence.kind not in NON_EVIDENCE:
         raise ValueError("explore session cannot grant mastery; start an assessment")
+    if state.intake is not None:
+        if state.intake.baseline is None and evidence.kind not in NON_EVIDENCE | {"diagnostic"}:
+            raise ValueError("complete the baseline diagnosis before learning assessments")
+        if evidence.dimension == Dimension.IMPLEMENTATION and evidence.kind not in NON_EVIDENCE:
+            task = next((task for task in state.exercises if task.path == evidence.artifact), None)
+            if (
+                task is None
+                or task.competency != evidence.competency
+                or task.id != evidence.attempt_id
+                or task.kind != evidence.kind
+            ):
+                raise ValueError("implementation evidence must reference its numbered exercise")
     if evidence.timestamp > at + timedelta(seconds=5):
         raise ValueError("future evidence is not allowed")
     if state.evidence and evidence.timestamp < state.evidence[-1].timestamp:
@@ -119,11 +132,16 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
 
 
 def roadmap(state: Snapshot) -> list[str]:
+    if state.intake is not None and state.intake.baseline is None:
+        raise ValueError("complete the learner baseline before designing a roadmap")
     graph = Graph(state.domains)
     return graph.closure(graph.domains[state.config.domain].targets[state.config.target])
 
 
 def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None = None) -> dict:
+    diagnostic = diagnostic_brief(state)
+    if diagnostic is not None:
+        return diagnostic
     at = at or now()
     scope = Scope(scope) if scope is not None else None
     graph = Graph(state.domains)
@@ -226,6 +244,13 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         "prerequisites": node.prerequisites,
         "depth": state.config.depth,
         "preferences": state.config.preferences,
+        "teaching_skills": [
+            "ai-lc-materials",
+            "ai-lc-visualize",
+            "ai-lc-motion",
+            "ai-lc-diagnose",
+            "ai-lc-python-lab",
+        ],
         "difficulty": max(1, state.knowledge.get(key, Knowledge()).levels.get(dimension, 0)),
         "recent_evidence": [
             e.model_dump(mode="json") for e in state.evidence if e.competency == key

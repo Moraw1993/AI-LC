@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ai-learning-lifecycle"
-version = "0.1.0"
+version = "0.2.0"
 description = "Evidence-driven adaptive learning lifecycle for AI harnesses"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -15,14 +15,14 @@ dependencies = ["pydantic>=2.10,<3", "PyYAML>=6,<7"]
 ailearn = "ailearn.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
+dev = ["pytest>=8,<10", "ruff>=0.11,<1", "pyinstaller>=6.16,<7"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ailearn"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/src", "/tests", "/docs", "/examples", "/README.md", "/CONTRIBUTING.md",
-           "/LICENSE", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.github", "/scripts"]
+           "/LICENSE", "/AGENTS.md", "/pyproject.toml", "/uv.lock", "/.github", "/scripts", "/install.py"]
 exclude = ["/docs/plan-review.md", "/docs/verification.md", "**/__pycache__/**"]
 
 [tool.pytest.ini_options]
