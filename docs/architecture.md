@@ -56,7 +56,10 @@ mechanism. The session brief and its phase are persisted as an audit event.
 
 Each competency has seven dimensions and a 0–4 threshold. Core dimensions depend on depth.
 Two distinct qualifying attempts are necessary per dimension. Independent failure clears
-previous success for that dimension, while hints do not establish mastery. Explanation and
+previous success for that dimension, while hints do not establish mastery. Evidence IDs are
+immutable; an explicit `record --replace OLD_ID` appends a correction linked by `supersedes_id`.
+Only the active judgment contributes to gates while all revisions remain replayable audit data.
+Completed baseline evidence cannot be revised. Explanation and
 self-report evidence never passes. Active misconceptions block progression until a new
 qualifying result explicitly resolves them. Transfer and retention gates lead to
 TRANSFERABLE and RETAINED only after core evidence. Evidence carries assessor identity,

@@ -155,7 +155,7 @@ def test_baseline_gate_genuine_failure_and_no_self_report(course):
         complete_intake(state, Baseline(summary="Self report", evidence_ids=["baseline-mean"]))
     hinted = result(identifier="hinted", hints=1)
     record(state, hinted)
-    assert "statistics.mean" in next_action(state)["missing_diagnostics"]
+    assert next_action(state)["missing_diagnostics"] == profile().diagnostic_competencies
     with pytest.raises(ValueError, match="diagnostic evidence"):
         complete_intake(state, Baseline(summary="Hinted", evidence_ids=["hinted"]))
     finish_baseline(course)
@@ -174,6 +174,23 @@ def test_baseline_requires_coverage_and_known_ids(course):
             complete_intake(state, Baseline(summary="Incomplete", evidence_ids=ids))
     record(state, result("time_series.autocorrelation", "acf", confidence=0.4))
     assert next_action(state)["missing_diagnostics"] == ["time_series.autocorrelation"]
+
+
+def test_diagnostic_revision_reopens_coverage_and_completed_baseline_is_protected(course):
+    state = course.load()
+    original = result()
+    original.score = 3
+    record(state, original)
+    corrected = result(identifier="baseline-mean-corrected")
+    corrected.attempt_id = original.attempt_id
+    corrected.score = 0
+    record(state, corrected, replace_id=original.id)
+    assert next_action(state)["missing_diagnostics"] == ["time_series.autocorrelation"]
+    finish_baseline(course)
+    saved = course.load()
+    revision = result(identifier="after-baseline")
+    with pytest.raises(ValueError, match="completed baseline"):
+        record(saved, revision, replace_id="baseline-mean")
 
 
 def test_numbered_files_preserve_attempts_and_never_execute(course):

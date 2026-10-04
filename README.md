@@ -178,7 +178,7 @@ Run these through `ailearn COMMAND`. Installed skills use the same executable.
 | `status` | Show dimension levels, stages, misconceptions and next action |
 | `plan` | Recompute target dependency closure and readiness |
 | `session --scope SCOPE` | Save a task brief for the harness |
-| `record FILE --sensors FILE` | Validate evidence; optionally run fresh deterministic checks |
+| `record FILE --sensors FILE --replace EVIDENCE_ID` | Validate evidence and optionally revise a prior judgment for the same attempt/dimension |
 | `doctor` | Validate schema, DAG and evidence replay |
 | `history` | Read session and evidence audit events |
 | `export --evidence-jsonl` | Print full portable state or evidence lines |
@@ -212,6 +212,11 @@ confidence ≥ 0.8, independence, no hints and no failing sensors or active misc
 Failed independent evidence resets accumulated success in that dimension; failed delayed
 retrieval invalidates all prior dimension passes and routes back to remediation. An explanation
 or self-report can mark exposure but never mastery.
+
+Evidence IDs are immutable. If an assessor corrects a judgment, submit a new evidence JSON
+with a new ID and run `ailearn record corrected.json --replace OLD_EVIDENCE_ID`. The old
+record remains in the audit history, while progression uses the corrected result. Ordinary
+duplicate submissions remain rejected; a completed baseline cannot be revised this way.
 
 Transfer and retention evidence require core mastery first. Reviews start after the core
 gate and are rescheduled after renewed mastery following failure. Dimension levels display

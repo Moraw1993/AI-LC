@@ -3,7 +3,16 @@
 from datetime import datetime, timedelta
 
 from ailearn.graph import Graph, required
-from ailearn.models import Dimension, Evidence, Knowledge, Scope, Snapshot, Stage, now
+from ailearn.models import (
+    Dimension,
+    Evidence,
+    Knowledge,
+    Scope,
+    Snapshot,
+    Stage,
+    active_evidence,
+    now,
+)
 from ailearn.onboarding import diagnostic_brief
 
 INTERVALS = (1, 3, 7, 14, 30, 60)
@@ -24,7 +33,7 @@ def qualifies(e: Evidence, threshold: int) -> bool:
 def passed(state: Snapshot, key: str, dimension: Dimension) -> bool:
     threshold = Graph(state.domains).nodes[key].threshold
     attempts: set[str] = set()
-    for e in state.evidence:
+    for e in active_evidence(state):
         if e.competency != key or e.kind in NON_EVIDENCE:
             continue
         # A failed delayed retrieval demonstrates forgetting, not merely a missing
@@ -47,9 +56,56 @@ def mastered(state: Snapshot, key: str) -> bool:
     )
 
 
-def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> None:
+def _review_progress(state: Snapshot, key: str, threshold: int) -> tuple[int, datetime | None]:
+    """Rebuild review streak from current evidence and mastery reset boundaries."""
+    prefix = Snapshot(config=state.config, domains=state.domains)
+    prefix.knowledge[key] = Knowledge()
+    review_step = 0
+    last_review = None
+    for evidence in active_evidence(state):
+        if evidence.competency != key:
+            continue
+        was_mastered = mastered(prefix, key)
+        prefix.evidence.append(evidence.model_copy(update={"supersedes_id": None}))
+        if evidence.kind not in NON_EVIDENCE:
+            misconceptions: set[str] = set()
+            for item in prefix.evidence:
+                if item.competency != key or item.kind in NON_EVIDENCE:
+                    continue
+                misconceptions.update(item.misconceptions)
+                if qualifies(item, threshold):
+                    misconceptions.difference_update(item.resolves)
+            prefix.knowledge[key].misconceptions = sorted(misconceptions)
+        is_mastered = mastered(prefix, key)
+        good = qualifies(evidence, threshold)
+        if evidence.kind == "delayed-retrieval":
+            review_step = min(review_step + 1, len(INTERVALS) - 1) if good else 0
+            last_review = evidence.timestamp
+        elif (
+            evidence.kind not in NON_EVIDENCE
+            and evidence.independent
+            and not good
+            and last_review is not None
+        ):
+            review_step = 0
+        elif good and is_mastered and not was_mastered:
+            review_step = 0
+    return review_step, last_review
+
+
+def record(
+    state: Snapshot,
+    evidence: Evidence,
+    at: datetime | None = None,
+    replace_id: str | None = None,
+) -> None:
     # Public API callers may have mutated a model after construction.
     evidence = Evidence.model_validate(evidence.model_dump())
+    if evidence.supersedes_id is not None:
+        if replace_id is None or evidence.supersedes_id != replace_id:
+            raise ValueError("use --replace to explicitly replace an existing assessment")
+    elif replace_id is not None:
+        evidence.supersedes_id = replace_id
     at = at or now()
     graph = Graph(state.domains)
     if evidence.competency not in graph.nodes:
@@ -72,33 +128,81 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
         raise ValueError("future evidence is not allowed")
     if state.evidence and evidence.timestamp < state.evidence[-1].timestamp:
         raise ValueError("evidence must be recorded in chronological order")
-    if any(
-        e.id == evidence.id
-        or (e.attempt_id == evidence.attempt_id and e.dimension == evidence.dimension)
-        for e in state.evidence
+    if any(e.id == evidence.id for e in state.evidence):
+        raise ValueError(f"duplicate evidence ID: {evidence.id}")
+    previous = next((e for e in state.evidence if e.id == replace_id), None)
+    if (
+        replace_id is not None
+        and state.intake
+        and state.intake.baseline
+        and replace_id in state.intake.baseline.evidence_ids
     ):
-        raise ValueError("duplicate evidence ID or attempt/dimension")
+        raise ValueError("cannot replace evidence used by the completed baseline")
+    duplicate = next(
+        (
+            e
+            for e in active_evidence(state)
+            if e.attempt_id == evidence.attempt_id and e.dimension == evidence.dimension
+        ),
+        None,
+    )
+    if replace_id is None and duplicate is not None:
+        raise ValueError(
+            f"duplicate attempt/dimension; use --replace {duplicate.id} to correct this assessment"
+        )
+    if replace_id is not None:
+        if previous is None or duplicate is None or duplicate.id != replace_id:
+            raise ValueError(
+                "--replace must identify the active evidence for the same attempt and dimension"
+            )
+        if (previous.attempt_id, previous.dimension, previous.competency) != (
+            evidence.attempt_id,
+            evidence.dimension,
+            evidence.competency,
+        ):
+            raise ValueError("replacement must keep the same attempt, dimension and competency")
+        if previous.kind != evidence.kind:
+            raise ValueError("replacement must keep the same evidence kind")
     key = evidence.competency
     k = state.knowledge.get(key, Knowledge())
     threshold = graph.nodes[key].threshold
     good = qualifies(evidence, threshold)
     was_mastered = mastered(state, key)
-    if evidence.dimension in {Dimension.TRANSFER, Dimension.RETENTION} and not was_mastered:
+    if (
+        replace_id is None
+        and evidence.dimension in {Dimension.TRANSFER, Dimension.RETENTION}
+        and not was_mastered
+    ):
         raise ValueError("transfer and retention require demonstrated core mastery first")
-    if evidence.kind == "delayed-retrieval":
+    if replace_id is None and evidence.kind == "delayed-retrieval":
         if k.review_due is None or evidence.timestamp < k.review_due:
             raise ValueError("retention is only valid when a scheduled review is due")
     state.knowledge[key] = k
     state.evidence.append(evidence)
+    if replace_id is not None:
+        state.history.append(
+            {
+                "event": "evidence-revised",
+                "id": evidence.id,
+                "supersedes_id": replace_id,
+                "attempt_id": evidence.attempt_id,
+                "dimension": evidence.dimension.value,
+                "timestamp": evidence.timestamp.isoformat(),
+            }
+        )
     if evidence.kind in NON_EVIDENCE:
         if k.stage == Stage.UNSEEN:
             k.stage = Stage.EXPOSED
     else:
         k.levels[evidence.dimension] = evidence.score
-        active = set(k.misconceptions) | set(evidence.misconceptions)
-        if good:
-            active -= set(evidence.resolves)
-        k.misconceptions = sorted(active)
+        active_misconceptions: set[str] = set()
+        for item in active_evidence(state):
+            if item.competency != key or item.kind in NON_EVIDENCE:
+                continue
+            active_misconceptions.update(item.misconceptions)
+            if qualifies(item, threshold):
+                active_misconceptions.difference_update(item.resolves)
+        k.misconceptions = sorted(active_misconceptions)
         if mastered(state, key):
             k.stage = Stage.DEMONSTRATED
             if passed(state, key, Dimension.TRANSFER):
@@ -108,9 +212,10 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
         else:
             k.stage = Stage.PRACTICED if evidence.independent else Stage.GUIDED
         if evidence.kind == "delayed-retrieval":
-            k.review_step = min(k.review_step + 1, len(INTERVALS) - 1) if good else 0
-            k.last_review = evidence.timestamp
-            k.review_due = evidence.timestamp + timedelta(days=INTERVALS[k.review_step])
+            review_step, last_review = _review_progress(state, key, threshold)
+            k.review_step = review_step
+            k.last_review = last_review
+            k.review_due = last_review + timedelta(days=INTERVALS[review_step])
         elif good and mastered(state, key) and not was_mastered:
             k.review_step = 0
             k.review_due = evidence.timestamp + timedelta(days=1)
@@ -185,7 +290,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             )
             attempts = [
                 e
-                for e in state.evidence
+                for e in active_evidence(state)
                 if e.competency == key
                 and e.kind not in NON_EVIDENCE
                 and (
@@ -258,7 +363,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         ],
         "difficulty": max(1, state.knowledge.get(key, Knowledge()).levels.get(dimension, 0)),
         "recent_evidence": [
-            e.model_dump(mode="json") for e in state.evidence if e.competency == key
+            e.model_dump(mode="json") for e in active_evidence(state) if e.competency == key
         ][-6:],
         "instructions": "Generate a fresh task just in time. Learner attempts first. "
         "Answer ordinary checks formatively in the current teaching conversation; do not "

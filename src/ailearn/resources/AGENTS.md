@@ -21,4 +21,6 @@ During baseline diagnosis, "I don't know" is a valid failed response. Do not exp
 
 Assessor emits genuine Evidence JSON according to the installed `ailearn.models.Evidence` schema. Submit it with `ailearn record result.json`, optionally `--sensors inputs.json`. Dimensions require two distinct independent attempts with score >= the competency threshold, confidence >= 0.8 and no hints. A failed sensor blocks that result. Misconceptions must be explicitly resolved by good new evidence. Transfer and delayed retrieval are separate gates. Explore grants no mastery.
 
+If an assessor must correct a recorded judgment, issue a new Evidence ID and explicitly use `ailearn record corrected.json --replace OLD_EVIDENCE_ID`. This preserves the old record for audit while progression uses the revised result. Never revise evidence included in a completed baseline; ordinary duplicate submissions stay rejected.
+
 Run `ailearn status` after recording and select the next task. Preserve artifacts referenced in evidence, hint history, timestamps and provenance. Run `ailearn doctor` to validate the snapshot. Never fabricate learner responses, evidence or source verification. No built-in execution sandbox or model client is supplied.
