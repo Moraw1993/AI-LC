@@ -61,8 +61,10 @@ try {
     Move-Item -LiteralPath $pending -Destination $shim -Force
     if (-not $NoModifyPath) {
         $userPath = [string][Environment]::GetEnvironmentVariable('Path', 'User')
-        if ($bin -notin ($userPath -split ';')) {
-            [Environment]::SetEnvironmentVariable('Path', (($userPath.TrimEnd(';') + ';' + $bin).TrimStart(';')), 'User')
+        $pathEntries = @($userPath -split ';' | Where-Object { $_ -and $_ -ne $bin })
+        $updatedPath = (@($bin) + $pathEntries) -join ';'
+        if ($updatedPath -ne $userPath) {
+            [Environment]::SetEnvironmentVariable('Path', $updatedPath, 'User')
         }
         $env:Path = "$bin;$env:Path"
     }
