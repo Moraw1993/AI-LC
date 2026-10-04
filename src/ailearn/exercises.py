@@ -45,6 +45,19 @@ def create_exercise(store: Store, exercise: Exercise) -> ExerciseArtifact:
         with store.transaction() as state:
             if exercise.competency not in Graph(state.domains).nodes:
                 raise ValueError("unknown exercise competency")
+            if state.plan_workflow and state.intake is not None:
+                phase = "overview" if state.intake.baseline is None else "adaptive"
+                if not any(
+                    plan.phase == phase and plan.status == "approved" for plan in state.plans
+                ):
+                    raise ValueError("approve the current course plan before creating exercises")
+                if state.intake.baseline is None and (
+                    exercise.kind != "diagnostic"
+                    or exercise.competency not in state.intake.profile.diagnostic_competencies
+                ):
+                    raise ValueError("baseline exercises must match agreed diagnostic competencies")
+                if state.intake.baseline is not None and exercise.kind == "diagnostic":
+                    raise ValueError("baseline diagnosis is complete; create a learning exercise")
             if (
                 state.intake is not None
                 and state.intake.baseline is None

@@ -11,7 +11,7 @@ RULES = "\n".join(
         "# AI-LC: allow deterministic reads only; writes retain normal approval policy.",
         *[
             f'prefix_rule(pattern = ["ailearn", "{command}"], decision = "allow")'
-            for command in ("--version", "domains", "sources", "schema", "status", "doctor", "plan")
+            for command in ("--version", "sources", "schema", "status", "doctor", "plan")
         ],
         "",
     ]

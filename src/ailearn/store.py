@@ -26,6 +26,7 @@ class Store:
         graph = Graph(state.domains)
         if state.config.domain not in graph.domains:
             raise ValueError("configured domain is missing")
+        graph.target_closure(state.config.domain, state.config.target)
         if set(state.knowledge) - set(graph.nodes):
             raise ValueError("unknown competency in learner state")
         if state.intake is not None:
@@ -44,7 +45,7 @@ class Store:
                 state.config.preferences,
             ):
                 raise ValueError("learning profile differs from course configuration")
-            closure = graph.closure(graph.domains[profile.domain].targets[profile.target])
+            closure = graph.target_closure(profile.domain, profile.target)
             if not set(profile.diagnostic_competencies) <= set(closure):
                 raise ValueError("invalid diagnostic competencies in learning profile")
             if state.intake.baseline is not None:
@@ -54,6 +55,9 @@ class Store:
                 check = state.model_copy(deep=True)
                 check.intake.baseline = None
                 complete_intake(check, baseline)
+        from ailearn.onboarding import validate_course_plans
+
+        validate_course_plans(state)
         return state
 
     def bootstrap_state(self) -> Bootstrap:
@@ -127,7 +131,7 @@ class Store:
         graph = Graph(domains)
         if profile.domain not in graph.domains:
             raise ValueError(f"unknown domain: {profile.domain}; provide a custom pack")
-        path = graph.closure(graph.domains[profile.domain].targets[profile.target])
+        path = graph.target_closure(profile.domain, profile.target)
         if not set(profile.diagnostic_competencies) <= set(path):
             raise ValueError("diagnostic competencies must belong to the selected goal closure")
         with self._lock():
@@ -148,6 +152,7 @@ class Store:
                 ),
                 domains,
                 Intake(profile=profile),
+                plan_workflow=True,
             )
             bootstrap.active_workspace = destination.relative_to(self.workspace).as_posix()
             self._atomic(self.root / "bootstrap.json", bootstrap.model_dump_json(indent=2))
@@ -225,7 +230,13 @@ class Store:
         finally:
             Path(name).unlink(missing_ok=True)
 
-    def init(self, config: Config, domains: list, intake: Intake | None = None) -> bool:
+    def init(
+        self,
+        config: Config,
+        domains: list,
+        intake: Intake | None = None,
+        plan_workflow: bool = False,
+    ) -> bool:
         if self.root.exists():
             state = self.load()
             if state.config != config:
@@ -240,6 +251,7 @@ class Store:
         graph = Graph(domains)
         if config.domain not in graph.domains:
             raise ValueError(f"unknown domain: {config.domain}")
+        graph.target_closure(config.domain, config.target)
         self.workspace.mkdir(parents=True, exist_ok=True)
         self._install_skills()
         stage = Path(tempfile.mkdtemp(prefix=".ai-learning-init-", dir=self.workspace))
@@ -249,6 +261,7 @@ class Store:
                 config=config,
                 domains=domains,
                 intake=intake,
+                plan_workflow=plan_workflow,
                 history=[{"event": "initialization", "timestamp": now().isoformat()}],
             )
             (stage / "state.json").write_text(state.model_dump_json(indent=2), "utf-8")

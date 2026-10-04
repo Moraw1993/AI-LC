@@ -3,13 +3,22 @@ from importlib.resources import files
 
 import pytest
 import yaml
+from domain_fixtures import PACKS, load_test_domains
 
 from ailearn.cli import main
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise
-from ailearn.graph import load_domains
-from ailearn.models import Baseline, Dimension, Evidence, Exercise, LearningProfile
-from ailearn.onboarding import complete_intake
+from ailearn.graph import Graph
+from ailearn.models import (
+    Baseline,
+    CoursePlanProposal,
+    Dimension,
+    Evidence,
+    Exercise,
+    LearningProfile,
+    PlanStage,
+)
+from ailearn.onboarding import approve_plan, complete_intake, propose_plan, validate_course_plans
 from ailearn.store import Store
 
 
@@ -19,7 +28,7 @@ def profile(**changes):
             "learner": "Arek",
             "goal": "Analyze time-series forecasts",
             "domain": "time-series",
-            "target": "mid",
+            "target": "forecasting-without-leakage",
             "target_description": "Compare forecasts without leakage",
             "depth": "standard",
             "workspace_name": "forecasting",
@@ -57,13 +66,234 @@ def result(key="statistics.mean", identifier="baseline-mean", **changes):
 def course(tmp_path):
     hub = Store(tmp_path)
     hub.bootstrap()
-    return hub.configure(profile(), load_domains())
+    course = hub.configure(profile(), load_test_domains())
+    with course.transaction() as state:
+        plan = propose_plan(state, plan_proposal(state, "overview"))
+        approve_plan(state, plan.version)
+    return course
+
+
+def plan_proposal(state, phase, **changes):
+    graph = Graph(state.domains)
+    selected = state.intake.profile
+    closure = graph.target_closure(selected.domain, selected.target)
+    return CoursePlanProposal(
+        **{
+            "phase": phase,
+            "goal": selected.goal,
+            "domain": selected.domain,
+            "target": selected.target,
+            "target_description": selected.target_description,
+            "depth": selected.depth,
+            "title": f"{phase.title()} plan",
+            "summary": "Learn the target skills and apply them to forecasting.",
+            "stages": [
+                PlanStage(
+                    title="Foundations and application",
+                    outcomes=["Explain and apply the listed competencies."],
+                    competencies=closure,
+                )
+            ],
+            "working_method": "Explanation, worked example, guided practice, "
+            "then an independent checkpoint.",
+            "projects": ["Compare a forecast with a simple baseline."],
+            "role_responsibilities": [
+                "Master coordinates the stages.",
+                "Teacher teaches; Assessor independently evaluates formal checkpoints.",
+            ],
+            **changes,
+        }
+    )
 
 
 def test_baseline_diagnostic_is_a_formal_checkpoint(course):
     brief = next_action(course.load())
     assert brief["assessment_checkpoint"] == "formal"
     assert "assessor" in brief["roles"]
+
+
+def test_new_course_requires_overview_then_baseline_then_adaptive_plan(tmp_path):
+    hub = Store(tmp_path)
+    hub.bootstrap()
+    course = hub.configure(profile(), load_test_domains())
+    state = course.load()
+    assert next_action(state)["action"] == "propose-plan"
+    assert next_action(state)["plan_phase"] == "overview"
+    with pytest.raises(ValueError, match="approve the current course plan"):
+        record(state, result())
+    with pytest.raises(ValueError, match="approve the course overview"):
+        complete_intake(
+            state,
+            Baseline(summary="Premature", evidence_ids=["not-collected-yet"]),
+        )
+
+    with course.transaction() as state:
+        invalid = plan_proposal(state, "overview")
+        invalid.stages[0].competencies.pop()
+        with pytest.raises(ValueError, match="cover the selected target"):
+            propose_plan(state, invalid)
+        wrong_scope = plan_proposal(state, "overview", goal="A different course goal")
+        with pytest.raises(ValueError, match="match the agreed learning profile"):
+            propose_plan(state, wrong_scope)
+        graph = Graph(state.domains)
+        profile_scope = state.intake.profile
+        reverse_order = list(
+            reversed(graph.target_closure(profile_scope.domain, profile_scope.target))
+        )
+        invalid_order = plan_proposal(
+            state,
+            "overview",
+            stages=[
+                PlanStage(title=key, outcomes=["Understand this outcome."], competencies=[key])
+                for key in reverse_order
+            ],
+        )
+        with pytest.raises(ValueError, match="before its prerequisite"):
+            propose_plan(state, invalid_order)
+        proposal = propose_plan(state, plan_proposal(state, "overview"))
+    assert next_action(course.load())["action"] == "await-plan-approval"
+    with pytest.raises(ValueError, match="approve the current course plan"):
+        record(course.load(), result())
+
+    with course.transaction() as state:
+        approve_plan(state, proposal.version)
+        assert not state.knowledge
+    assert next_action(course.load())["action"] == "diagnostic"
+    with course.transaction() as state:
+        with pytest.raises(ValueError, match="agreed diagnostic competency"):
+            record(state, result("statistics.variance", "not-agreed"))
+        record(state, result())
+        record(state, result("time_series.autocorrelation", "baseline-acf"))
+        complete_intake(
+            state,
+            Baseline(
+                summary="Baseline complete",
+                evidence_ids=["baseline-mean", "baseline-acf"],
+            ),
+        )
+        assert next_action(state)["action"] == "propose-plan"
+        assert next_action(state)["plan_phase"] == "adaptive"
+        with pytest.raises(ValueError, match="approve the current course plan"):
+            record(state, result("statistics.mean", "practice-before-roadmap", kind="assessment"))
+        with pytest.raises(ValueError, match="approve the current course plan"):
+            record(state, result("statistics.mean", "teaching-before-roadmap", kind="explanation"))
+        ordered = [
+            "statistics.mean",
+            "statistics.variance",
+            "statistics.probability",
+            "statistics.covariance",
+            "statistics.correlation",
+            "time_series.autocorrelation",
+            "time_series.stationarity",
+            "statistics.inference",
+            "machine_learning.validation",
+            "time_series.temporal_validation",
+        ]
+        adaptive = propose_plan(
+            state,
+            plan_proposal(
+                state,
+                "adaptive",
+                title="Forecasting route",
+                stages=[
+                    PlanStage(
+                        title="Core foundations",
+                        outcomes=["Build essential foundations."],
+                        competencies=ordered[:2],
+                    ),
+                    PlanStage(
+                        title="Probability before covariance",
+                        outcomes=["Use probability in forecasting."],
+                        competencies=ordered[2:],
+                    ),
+                ],
+            ),
+        )
+        before = state.knowledge.copy()
+        approve_plan(state, adaptive.version)
+        assert state.knowledge == before
+        assert roadmap(state) == ordered
+        action = next_action(state)
+        assert action["competency"] == "statistics.mean"
+        assert action["course_plan"] == {
+            "title": "Forecasting route",
+            "stage": "Core foundations",
+            "stage_outcomes": ["Build essential foundations."],
+        }
+    assert next_action(course.load())["phase"] != "course-planning"
+
+
+def test_plan_revision_requires_reapproval_and_is_audited(course):
+    with course.transaction() as state:
+        original = state.plans[-1]
+        revised = propose_plan(
+            state, plan_proposal(state, "overview", summary="A clearer overview."), revise=True
+        )
+        assert revised.version == original.version + 1
+        assert original.status == "approved"
+        assert next_action(state)["action"] == "await-plan-approval"
+        approve_plan(state, revised.version)
+        assert original.status == "superseded"
+        assert state.history[-2]["event"] == "plan.revised"
+        assert state.history[-1]["event"] == "plan.approved"
+
+
+def test_plan_cli_proposes_approves_and_displays_plan(tmp_path, capsys):
+    hub = Store(tmp_path)
+    hub.bootstrap()
+    course = hub.configure(profile(), load_test_domains())
+    proposal_file = tmp_path / "overview.json"
+    proposal_file.write_text(plan_proposal(course.load(), "overview").model_dump_json(), "utf-8")
+    prefix = ["--workspace", str(tmp_path)]
+    assert main(prefix + ["plan", "propose", str(proposal_file)]) == 0
+    proposed = json.loads(capsys.readouterr().out)
+    assert proposed["plan"]["status"] == "proposed"
+    assert proposed["next"]["action"] == "await-plan-approval"
+    assert main(prefix + ["plan", "approve", "1"]) == 0
+    approved = json.loads(capsys.readouterr().out)
+    assert approved["plan"]["status"] == "approved"
+    assert approved["next"]["action"] == "diagnostic"
+    assert main(prefix + ["plan"]) == 0
+    view = json.loads(capsys.readouterr().out)
+    assert view["plans"][0]["version"] == 1
+    assert view["next"]["action"] == "diagnostic"
+    assert main(["schema", "CoursePlanProposal"]) == 0
+    assert "role_responsibilities" in json.loads(capsys.readouterr().out)["properties"]
+
+
+def test_legacy_profile_without_plan_workflow_remains_usable(tmp_path):
+    from ailearn.models import Config, Intake
+
+    store = Store(tmp_path)
+    selected = profile()
+    store.init(
+        Config(
+            learner=selected.learner,
+            domain=selected.domain,
+            target=selected.target,
+            depth=selected.depth,
+            preferences=selected.working_style,
+        ),
+        load_test_domains(),
+        Intake(profile=selected),
+    )
+    legacy_path = store.root / "state.json"
+    legacy = json.loads(legacy_path.read_text("utf-8"))
+    legacy.pop("plan_workflow")
+    legacy.pop("plans")
+    legacy_path.write_text(json.dumps(legacy), "utf-8")
+    state = store.load()
+    assert not state.plan_workflow
+    assert next_action(state)["action"] == "diagnostic"
+    record(state, result())
+
+
+def test_modern_snapshot_rejects_completed_baseline_without_overview_plan(course):
+    state = course.load()
+    state.plans.clear()
+    state.intake.baseline = Baseline(summary="Completed", evidence_ids=["baseline-mean"])
+    with pytest.raises(ValueError, match="approved overview plan"):
+        validate_course_plans(state)
 
 
 def finish_baseline(course):
@@ -77,6 +307,8 @@ def finish_baseline(course):
                 evidence_ids=["baseline-mean", "baseline-acf"],
             ),
         )
+        adaptive = propose_plan(state, plan_proposal(state, "adaptive"))
+        approve_plan(state, adaptive.version)
 
 
 def spec(**changes):
@@ -130,15 +362,16 @@ def test_configuration_preserves_course_and_hub_routing(course):
     assert hub.active().workspace == course.workspace
     assert course.load().intake.profile.agent_name == "Ada"
     before = (course.root / "state.json").read_bytes()
-    assert hub.configure(profile(), load_domains()).workspace == course.workspace
+    assert hub.configure(profile(), load_test_domains()).workspace == course.workspace
     assert (course.root / "state.json").read_bytes() == before
     assert not hub.bootstrap()
     assert hub.active().workspace == course.workspace
     with pytest.raises(ValueError, match="different learning profile"):
-        hub.configure(profile(agent_name="Other"), load_domains())
+        hub.configure(profile(agent_name="Other"), load_test_domains())
     with pytest.raises(ValueError, match="goal closure"):
         hub.configure(
-            profile(diagnostic_competencies=["machine_learning.gradient_descent"]), load_domains()
+            profile(diagnostic_competencies=["machine_learning.gradient_descent"]),
+            load_test_domains(),
         )
 
 
@@ -206,7 +439,7 @@ def test_numbered_files_preserve_attempts_and_never_execute(course):
     assert path.read_text("utf-8") == "# Learner's work\n"
     retry = create_exercise(course, spec(attempt=2))
     assert retry.path != task.path
-    with pytest.raises(ValueError, match="another competency"):
+    with pytest.raises(ValueError, match="agreed diagnostic competencies"):
         create_exercise(course, spec(attempt=3, competency="statistics.variance"))
     with pytest.raises(ValueError, match="80 lines"):
         create_exercise(course, spec(attempt=3, source="pass\n" * 81))
@@ -263,11 +496,17 @@ def test_full_cli_onboarding_and_course_recreation(tmp_path, capsys):
     assert main(prefix + ["init"]) == 0
     profile_file = tmp_path / "profile.json"
     profile_file.write_text(profile().model_dump_json(), "utf-8")
-    assert main(prefix + ["configure", str(profile_file)]) == 0
+    assert main(prefix + ["configure", str(profile_file), "--packs", str(PACKS)]) == 0
     capsys.readouterr()
     assert main(prefix + ["plan"]) == 0
     assert json.loads(capsys.readouterr().out)["roadmap"] is None
     course = Store(tmp_path).active()
+    overview_file = tmp_path / "overview.json"
+    overview_file.write_text(plan_proposal(course.load(), "overview").model_dump_json(), "utf-8")
+    assert main(prefix + ["plan", "propose", str(overview_file)]) == 0
+    capsys.readouterr()
+    assert main(prefix + ["plan", "approve", "1"]) == 0
+    capsys.readouterr()
     for response in [result(), result("time_series.autocorrelation", "baseline-acf")]:
         file = tmp_path / "result.json"
         file.write_text(response.model_dump_json(), "utf-8")
@@ -281,6 +520,12 @@ def test_full_cli_onboarding_and_course_recreation(tmp_path, capsys):
     )
     assert main(prefix + ["complete-intake", str(report)]) == 0
     capsys.readouterr()
+    adaptive_file = tmp_path / "adaptive.json"
+    adaptive_file.write_text(plan_proposal(course.load(), "adaptive").model_dump_json(), "utf-8")
+    assert main(prefix + ["plan", "propose", str(adaptive_file)]) == 0
+    capsys.readouterr()
+    assert main(prefix + ["plan", "approve", "2"]) == 0
+    capsys.readouterr()
     assert main(prefix + ["plan"]) == 0
     assert json.loads(capsys.readouterr().out)["roadmap"]
     spec_file = tmp_path / "spec.json"
@@ -288,26 +533,25 @@ def test_full_cli_onboarding_and_course_recreation(tmp_path, capsys):
     assert main(prefix + ["exercise", str(spec_file)]) == 0
     assert main(prefix + ["doctor"]) == 0
     before = (course.root / "state.json").read_bytes()
-    assert main(prefix + ["configure", str(profile_file)]) == 0
+    assert main(prefix + ["configure", str(profile_file), "--packs", str(PACKS)]) == 0
     assert (course.root / "state.json").read_bytes() == before
 
 
-def test_master_can_configure_a_fresh_subject(tmp_path):
+def test_master_can_configure_a_fresh_subject_and_custom_target(tmp_path):
     hub = Store(tmp_path)
     hub.bootstrap()
-    custom = load_domains()[0].model_copy(deep=True)
+    custom = next(d for d in load_test_domains() if d.id == "statistics").model_copy(deep=True)
     custom.id, custom.name = "optimization", "Optimization"
     custom.competencies = [custom.competencies[0]]
     custom.competencies[0].id = "optimization.objective"
     custom.competencies[0].name = "Objective functions"
-    custom.targets = {
-        level: ["optimization.objective"] for level in ["beginner", "mid", "advanced"]
-    }
+    custom.targets = {"optimization-objective": ["optimization.objective"]}
     packs = tmp_path / "packs"
     packs.mkdir()
     (packs / "optimization.yml").write_text(custom.model_dump_json(), "utf-8")
     selected = profile(
         domain="optimization",
+        target="optimization-objective",
         workspace_name="optimization",
         goal="Understand objective functions",
         diagnostic_competencies=["optimization.objective"],
@@ -339,7 +583,7 @@ def test_profile_or_baseline_corruption_fails_clearly(course):
     with pytest.raises(ValueError, match="unknown evidence"):
         course.load()
     value = json.loads(before)
-    value["intake"]["profile"]["target"] = "advanced"
+    value["intake"]["profile"]["target"] = "different-goal"
     (course.root / "state.json").write_text(json.dumps(value), "utf-8")
     with pytest.raises(ValueError, match="configuration"):
         course.load()

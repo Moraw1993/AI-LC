@@ -15,6 +15,7 @@ from ailearn.exercises import create_exercise, validate_artifacts
 from ailearn.graph import Graph, load_domains
 from ailearn.models import (
     Baseline,
+    CoursePlanProposal,
     Evidence,
     Exercise,
     LearningProfile,
@@ -22,7 +23,13 @@ from ailearn.models import (
     active_evidence,
     now,
 )
-from ailearn.onboarding import complete_intake, diagnostic_brief, onboarding_brief
+from ailearn.onboarding import (
+    approve_plan,
+    complete_intake,
+    diagnostic_brief,
+    onboarding_brief,
+    propose_plan,
+)
 from ailearn.sensors import run
 from ailearn.store import Store, dumps
 
@@ -39,17 +46,27 @@ def parser() -> argparse.ArgumentParser:
         "configure", help="Create a course from Master's agreed profile"
     )
     configure.add_argument("file", type=Path)
-    configure.add_argument("--packs", type=Path, help="Directory of additional YAML packs")
+    configure.add_argument(
+        "--packs", type=Path, required=True, help="Agent-authored course pack directory"
+    )
     baseline = commands.add_parser(
         "complete-intake", help="Confirm independently diagnosed baseline"
     )
     baseline.add_argument("file", type=Path)
     exercise = commands.add_parser("exercise", help="Create a short numbered Python task")
     exercise.add_argument("file", type=Path)
-    commands.add_parser("domains", help="List validated built-in packs")
+    domains = commands.add_parser("domains", help="Validate and list agent-authored domain packs")
+    domains.add_argument("--packs", type=Path, required=True)
     commands.add_parser("status", help="Show demonstrated knowledge and review queue")
     commands.add_parser("doctor", help="Validate workspace, graph and audit log")
-    commands.add_parser("plan", help="Recompose the adaptive roadmap")
+    plan = commands.add_parser("plan", help="Show or manage the approved course plan")
+    plan_actions = plan.add_subparsers(dest="plan_action")
+    propose = plan_actions.add_parser("propose", help="Propose the next course plan")
+    propose.add_argument("file", type=Path)
+    revise = plan_actions.add_parser("revise", help="Revise a proposed or approved plan")
+    revise.add_argument("file", type=Path)
+    approve = plan_actions.add_parser("approve", help="Approve a proposed course plan")
+    approve.add_argument("version", type=int)
     commands.add_parser("history", help="Show session and evidence audit history")
     session = commands.add_parser("session", help="Create a just-in-time agent task brief")
     session.add_argument("--scope", choices=list(Scope))
@@ -69,7 +86,16 @@ def parser() -> argparse.ArgumentParser:
     schema = commands.add_parser("schema", help="Print a harness contract without external imports")
     schema.add_argument(
         "model",
-        choices=["LearningProfile", "Domain", "Baseline", "Evidence", "Exercise", "Snapshot"],
+        choices=[
+            "LearningProfile",
+            "Domain",
+            "Baseline",
+            "Evidence",
+            "Exercise",
+            "CoursePlanProposal",
+            "CoursePlan",
+            "Snapshot",
+        ],
     )
     return p
 
@@ -96,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
                 dumps(
                     [
                         {"id": d.id, "name": d.name, "competencies": len(d.competencies)}
-                        for d in load_domains()
+                        for d in load_domains(args.packs)
                     ]
                 )
             )
@@ -123,7 +149,7 @@ def main(argv: list[str] | None = None) -> int:
             baseline = Baseline.model_validate_json(args.file.read_text("utf-8"))
             with store.transaction() as state:
                 complete_intake(state, baseline)
-            print("Baseline recorded; adaptive planning is now available.")
+            print(dumps({"message": "Baseline recorded.", "next": next_action(store.load())}))
         elif args.command == "exercise":
             exercise = Exercise.model_validate_json(args.file.read_text("utf-8"))
             print(dumps(create_exercise(store, exercise).model_dump(mode="json")))
@@ -171,23 +197,52 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
             elif args.command == "plan":
-                if diagnostic_brief(state) is not None:
+                if args.plan_action in {"propose", "revise"}:
+                    proposal = CoursePlanProposal.model_validate_json(args.file.read_text("utf-8"))
+                    with store.transaction() as mutable:
+                        created = propose_plan(
+                            mutable, proposal, revise=args.plan_action == "revise"
+                        )
                     print(
-                        dumps({"phase": "discovery", "roadmap": None, "next": next_action(state)})
+                        dumps(
+                            {
+                                "plan": created.model_dump(mode="json"),
+                                "next": next_action(store.load()),
+                            }
+                        )
                     )
-                    return 0
-                print(
-                    dumps(
-                        {
-                            "phase": "curriculum-design",
-                            "roadmap": [
-                                {"competency": k, "mastered": mastered(state, k)}
-                                for k in roadmap(state)
-                            ],
-                            "next": next_action(state),
-                        }
+                elif args.plan_action == "approve":
+                    with store.transaction() as mutable:
+                        approved = approve_plan(mutable, args.version)
+                    print(
+                        dumps(
+                            {
+                                "plan": approved.model_dump(mode="json"),
+                                "next": next_action(store.load()),
+                            }
+                        )
                     )
-                )
+                else:
+                    next_brief = next_action(state)
+                    roadmap_value = None
+                    if (
+                        next_brief.get("phase") != "course-planning"
+                        and diagnostic_brief(state) is None
+                    ):
+                        roadmap_value = [
+                            {"competency": key, "mastered": mastered(state, key)}
+                            for key in roadmap(state)
+                        ]
+                    print(
+                        dumps(
+                            {
+                                "phase": next_brief.get("phase"),
+                                "plans": [plan.model_dump(mode="json") for plan in state.plans],
+                                "roadmap": roadmap_value,
+                                "next": next_brief,
+                            }
+                        )
+                    )
             elif args.command == "history":
                 print(dumps(state.history))
             elif args.command == "export":

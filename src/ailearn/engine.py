@@ -13,7 +13,7 @@ from ailearn.models import (
     active_evidence,
     now,
 )
-from ailearn.onboarding import diagnostic_brief
+from ailearn.onboarding import diagnostic_brief, planning_brief
 
 INTERVALS = (1, 3, 7, 14, 30, 60)
 NON_EVIDENCE = {"explanation", "self-report"}
@@ -113,8 +113,40 @@ def record(
     if state.session.get("scope") == "explore" and evidence.kind not in NON_EVIDENCE:
         raise ValueError("explore session cannot grant mastery; start an assessment")
     if state.intake is not None:
+        if (
+            replace_id is not None
+            and state.intake.baseline is not None
+            and replace_id in state.intake.baseline.evidence_ids
+        ):
+            raise ValueError("cannot revise evidence used by a completed baseline")
+        if state.plan_workflow:
+            if state.intake.baseline is None:
+                if not any(
+                    plan.phase == "overview" and plan.status == "approved" for plan in state.plans
+                ):
+                    raise ValueError(
+                        "approve the current course plan before recording baseline evidence"
+                    )
+            elif evidence.kind == "diagnostic":
+                if evidence.id not in state.intake.baseline.evidence_ids:
+                    raise ValueError(
+                        "the baseline diagnosis is complete; use a new learning assessment"
+                    )
+            elif not any(
+                plan.phase == "adaptive" and plan.status == "approved" for plan in state.plans
+            ):
+                raise ValueError(
+                    "approve the current course plan before recording learning evidence"
+                )
         if state.intake.baseline is None and evidence.kind not in NON_EVIDENCE | {"diagnostic"}:
             raise ValueError("complete the baseline diagnosis before learning assessments")
+        if (
+            state.plan_workflow
+            and state.intake.baseline is None
+            and evidence.kind == "diagnostic"
+            and evidence.competency not in state.intake.profile.diagnostic_competencies
+        ):
+            raise ValueError("diagnostic evidence must match an agreed diagnostic competency")
         if evidence.dimension == Dimension.IMPLEMENTATION and evidence.kind not in NON_EVIDENCE:
             task = next((task for task in state.exercises if task.path == evidence.artifact), None)
             if (
@@ -239,11 +271,20 @@ def record(
 def roadmap(state: Snapshot) -> list[str]:
     if state.intake is not None and state.intake.baseline is None:
         raise ValueError("complete the learner baseline before designing a roadmap")
+    if state.plan_workflow:
+        plans = [
+            plan for plan in state.plans if plan.phase == "adaptive" and plan.status == "approved"
+        ]
+        if plans:
+            return [key for stage in plans[-1].stages for key in stage.competencies]
     graph = Graph(state.domains)
-    return graph.closure(graph.domains[state.config.domain].targets[state.config.target])
+    return graph.target_closure(state.config.domain, state.config.target)
 
 
 def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None = None) -> dict:
+    plan_gate = planning_brief(state)
+    if plan_gate is not None:
+        return plan_gate
     diagnostic = diagnostic_brief(state)
     if diagnostic is not None:
         return diagnostic
@@ -323,6 +364,22 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
     elif selected == Scope.PROJECT:
         dimension = Dimension.TRANSFER
     node = graph.nodes[key]
+    active_plan = next(
+        (
+            plan
+            for plan in reversed(state.plans)
+            if plan.phase == "adaptive" and plan.status == "approved"
+        ),
+        None,
+    )
+    plan_stage = (
+        next(
+            (stage for stage in active_plan.stages if key in stage.competencies),
+            None,
+        )
+        if active_plan
+        else None
+    )
     roles = {
         Scope.ASSESSMENT: ["assessor"],
         Scope.REVIEW: ["assessor"],
@@ -343,6 +400,15 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         if selected == Scope.ASSESSMENT
         else "learning",
         "competency": key,
+        "course_plan": (
+            {
+                "title": active_plan.title,
+                "stage": plan_stage.title,
+                "stage_outcomes": plan_stage.outcomes,
+            }
+            if active_plan and plan_stage
+            else None
+        ),
         "dimension": dimension.value,
         "scope": selected.value,
         "roles": selected_roles,
