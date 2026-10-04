@@ -22,9 +22,11 @@ high confidence in that observation; it never proves mastery. Do not explain the
 and then mark the same attempt independent. If explanation is requested, clearly switch
 to teaching, record hints/exposure, and later ask a fresh unhinted diagnostic.
 
-Save actual answers in a course-relative artifact. Independent Assessor produces Evidence
-JSON according to `ailearn.models.Evidence`, kind diagnostic, genuine independence and
-hint count, and an honest confidence. Record using `ailearn record result.json`.
+Save actual answers in a course-relative artifact. These are formal diagnostic checkpoints:
+after a response is complete, independent Assessor produces Evidence JSON according to
+`ailearn.models.Evidence`, kind diagnostic, genuine independence and hint count, and an
+honest confidence. Ordinary lesson checks outside this diagnosis remain formative and do
+not invoke Assessor or create Evidence. Record formal results using `ailearn record result.json`.
 Python diagnostic tasks must use `$ai-lc-python-lab`; reference their registered path
 and LNNN-TNNN-ANNN attempt ID for implementation evidence.
 

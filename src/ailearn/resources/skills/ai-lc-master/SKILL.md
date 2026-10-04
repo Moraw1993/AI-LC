@@ -39,7 +39,9 @@ The command creates `workspaces/<workspace_name>` and activates it; repeating an
 identical profile preserves progress. Never edit state.json manually.
 
 Invoke `$ai-lc-diagnose` before constructing a lesson plan. Gather genuine responses;
-use independent Assessor to record them and complete intake. Then run `ailearn plan`
+use independent Assessor only after each completed formal diagnostic response to record
+evidence and complete intake. During ordinary lessons, keep formative checks in Teacher's
+current conversation without spawning Assessor or creating Evidence. Then run `ailearn plan`
 and `ailearn session`, delegate only required roles, and keep returning to the agreed goal.
 Teacher may use materials, visualization and motion skills; Lab Coach creates short
 numbered Python tasks through `$ai-lc-python-lab`. Actual tool availability determines media.

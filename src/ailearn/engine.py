@@ -329,7 +329,11 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         Scope.PRACTICE: ["lab-coach", "assessor"],
         Scope.PROJECT: ["research-data", "lab-coach", "assessor"],
         Scope.EXPLORE: ["teacher", "research-data"],
+        Scope.LEARN: ["teacher", "lab-coach"],
+        Scope.DEEP: ["teacher", "lab-coach"],
+        Scope.REMEDIATE: ["teacher", "lab-coach"],
     }
+    selected_roles = roles.get(selected, ["teacher", "lab-coach"])
     return {
         "phase": "consolidation"
         if selected == Scope.REVIEW
@@ -341,7 +345,8 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         "competency": key,
         "dimension": dimension.value,
         "scope": selected.value,
-        "roles": roles.get(selected, ["teacher", "lab-coach", "assessor"]),
+        "roles": selected_roles,
+        "assessment_checkpoint": "formal" if "assessor" in selected_roles else "formative",
         "reason": reason,
         "outcomes": node.outcomes.get(dimension, []),
         "misconceptions": state.knowledge.get(key, Knowledge()).misconceptions,
@@ -361,6 +366,9 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             e.model_dump(mode="json") for e in active_evidence(state) if e.competency == key
         ][-6:],
         "instructions": "Generate a fresh task just in time. Learner attempts first. "
-        "Assessor uses the response, rubric and sensors, not Teacher encouragement. "
-        "Record explanation/self-report as non-mastery evidence; explore grants no mastery.",
+        "Answer ordinary checks formatively in the current teaching conversation; do not "
+        "spawn Assessor or create Evidence for them. Spawn Assessor only when this brief "
+        "marks a formal checkpoint, after the learner completes the task. Assessor uses "
+        "the response, rubric and sensors, not Teacher encouragement. Record only formal "
+        "Evidence; explanation/self-report never prove mastery and explore grants no mastery.",
     }

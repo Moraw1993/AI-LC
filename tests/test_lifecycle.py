@@ -365,9 +365,20 @@ def test_explicit_scopes_and_due_priority(state):
         brief = next_action(state, scope=scope)
         assert brief["scope"] == scope
         assert brief["competency"] == "statistics.mean"
+        assert ("assessor" in brief["roles"]) == (scope in {"practice", "assessment"})
+    for scope in ["learn", "deep-learn", "remediate", "explore"]:
+        assert next_action(state, scope=scope)["assessment_checkpoint"] == "formative"
+    for scope in ["practice", "assessment"]:
+        assert next_action(state, scope=scope)["assessment_checkpoint"] == "formal"
     demonstrate(state, "statistics.mean")
     due = state.knowledge["statistics.mean"].review_due
     assert next_action(state, scope="learn", at=due)["scope"] == "review"
+    review = next_action(state, scope="learn", at=due)
+    assert review["assessment_checkpoint"] == "formal"
+    assert "assessor" in review["roles"]
+    project = next_action(state, scope="project")
+    assert project["assessment_checkpoint"] == "formal"
+    assert "assessor" in project["roles"]
 
 
 def test_uninitialized_and_invalid_custom_packs(tmp_path):

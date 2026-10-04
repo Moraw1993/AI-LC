@@ -33,6 +33,7 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
         "competency": key,
         "dimension": "conceptual",
         "roles": ["teacher", "assessor"],
+        "assessment_checkpoint": "formal",
         "agent_name": profile.agent_name,
         "language": profile.language,
         "action": "diagnostic" if missing else "complete-intake",
@@ -40,7 +41,8 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
         "outcomes": node.outcomes,
         "prior_knowledge": profile.prior_knowledge,
         "instructions": "Teacher gathers prior experience and asks short baseline questions. "
-        "Assessor evaluates genuine responses as diagnostic evidence without hints. 'I do "
+        "These are a formal diagnostic checkpoint: gather each response without coaching, "
+        "then use the independent Assessor to evaluate it as diagnostic evidence. 'I do "
         "not know' can be a genuine failed diagnostic. Do not teach during the independent "
         "attempt or invent results. Record the baseline with "
         "ailearn complete-intake "
