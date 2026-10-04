@@ -32,23 +32,42 @@ workspaces in a separate directory outside the checkout.
 
 ## Quick start
 
-In an empty learning directory, using the installed tool:
+In an empty learning directory outside this checkout, using the installed tool:
 
 ```sh
-ailearn init --learner Arek --domain time-series --target mid --depth comprehensive
-ailearn doctor
-ailearn plan
-ailearn session
+ailearn init
 ```
 
-Initialization is noninteractive and defaults to statistics/mid/standard. It stores a
-versioned authoritative `.ai-learning/state.json` and copies six role instructions plus
-shared policy. It creates `AGENTS.md` only if absent. When instructions already exist,
-load `.ai-learning/AGENTS.md` explicitly in the harness. Reinitializing with identical
-settings preserves state; different settings fail safely.
+Open that directory in Codex and invoke **`$ai-lc-master`**. Master discusses what you
+want to learn, why, the abilities you want to achieve, your previous experience, language,
+pace and style. Together you choose the tutor's display name and course workspace name.
+Initialization chooses **no subject, level or learning path**.
+
+The neutral hub contains `.ai-learning/bootstrap.json`, six role instructions, shared
+policy and six discoverable skills under `.agents/skills`. Codex discovers skills from
+that directory; see [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
+AI-LC supplies logical roles and skills, not a native Codex agent registration or model
+runtime. The tutor's chosen name lives in the agreed profile.
+
+Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
+`ailearn configure profile.json [--packs packs]`, creating `workspaces/<agreed-name>`.
+Teacher then gathers relevant prerequisite knowledge and current ability through small
+diagnostics; independent Assessor records genuine answers. A failed answer such as
+"I don't know" establishes a gap, not mastery. Explaining the answer switches to teaching;
+that attempt cannot be counted as independent.
+
+Only after `ailearn complete-intake baseline.json` verifies diagnostic coverage can the
+Curriculum Architect build a lesson roadmap. Master then uses `ailearn plan` and `session`.
+Starter packs are optional examples; the external AI can author validated packs for other
+subjects. The lesson sequence adapts to evidence, prerequisites and the agreed goal.
+
+Root `AGENTS.md` is created only if absent. When instructions already exist, load
+`.ai-learning/AGENTS.md` explicitly in the harness. Reinitializing preserves progress.
+An identical course profile preserves its state; changing an existing profile or its
+packs fails safely. Use a new workspace name for a different course.
 
 Use `ailearn --workspace /path/to/learning COMMAND` to address another directory.
-The first task is an independent diagnostic of an uncertain prerequisite. After failure,
+Hub commands route to its active course; `status` includes that course's path. After failure,
 the next task becomes remediation. After sufficient independent evidence, the roadmap
 advances. Due reviews preempt new material; transfer tasks follow the core gates.
 
@@ -58,6 +77,19 @@ The Learning Conductor reads the task brief and delegates to Curriculum Architec
 Teacher, Lab Coach, Assessor or Research & Data. Assessor receives limited teaching context.
 The learner attempts first; hints progress from conceptual direction to a full solution.
 The actual hint level is recorded, and hinted attempts cannot pass mastery gates.
+
+Teacher uses `$ai-lc-diagnose`, `$ai-lc-materials`, `$ai-lc-visualize` and `$ai-lc-motion`:
+baseline checks, sourced educational notes, data plots/diagrams/generated illustrations,
+and animated explanations or motion-design videos. Image and video rendering depend on
+the harness's available tools; the skills do not install services. When a video renderer
+is unavailable, use a standalone HTML animation or an explicitly labeled storyboard.
+
+Lab Coach uses `$ai-lc-python-lab` and `ailearn exercise spec.json` to create fresh tasks
+of at most 80 lines, including instructions. Each attempt has its own file, for example
+`lessons/lesson_001_topic_002_attempt_003_statistics_mean.py`. Existing attempts are never
+overwritten. The returned ID, such as `L001-T002-A003`, and path are required for modern
+course implementation evidence. The CLI validates syntax and saves the scaffold; it
+never executes learner code. No static exercise bank is supplied.
 
 For time series, the prerequisite closure includes mean, variance, covariance and
 correlation. If a diagnostic reveals weak covariance interpretation, the Conductor routes
@@ -96,14 +128,18 @@ ailearn status
 ailearn session
 ```
 
-Results are trusted assessor submissions; v0.1 does not authenticate assessor identity or
-verify the contents of artifact references. Preserve referenced artifacts yourself.
+Results are trusted assessor submissions; AI-LC does not authenticate assessor identity or
+verify answer semantics. Modern implementation submissions must match a registered task;
+the CLI also checks registered files exist. Preserve other referenced artifacts yourself.
 
 ## CLI
 
 | Command | Purpose |
 | --- | --- |
-| `init` | Initialize safely; `--packs DIR` adds custom packs |
+| `init` | Install a subject-neutral hub, Master and teaching skills |
+| `configure FILE --packs DIR` | Create/activate a course from an explicitly agreed profile |
+| `complete-intake FILE` | Confirm baseline summary and genuine diagnostic evidence IDs |
+| `exercise FILE` | Register a fresh short Python task with lesson/topic/attempt numbers |
 | `domains` | List validated built-in domains |
 | `status` | Show dimension levels, stages, misconceptions and next action |
 | `plan` | Recompute target dependency closure and readiness |
@@ -163,7 +199,17 @@ uv run python examples/time_series.py
 ```
 
 Starter packs cover statistics (6 competencies), machine learning (4) and time series (4).
-They are small curricula with outcomes and rubrics, not exercise catalogs.
+They supply outcomes and rubrics, not exercise catalogs or an imposed subject choice.
+
+## Existing v0.1 workspaces
+
+Existing `.ai-learning/state.json` snapshots remain readable without rewriting or
+inventing an intake baseline. Their previous evidence rules remain unchanged. The CLI's
+old topic flags on `init` have been replaced by Master-led `configure`; use `init` in a
+new directory for the new conversation-first flow. Re-running `init` in an old course
+adds skills while preserving its snapshot and instructions. Existing conflicting skill
+files fail clearly and are preserved. The internal `Store.init(Config, domains)` API
+remains available for legacy integrations and the deterministic runnable example.
 
 ## v0.1 boundaries
 
