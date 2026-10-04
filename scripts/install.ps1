@@ -25,10 +25,7 @@ foreach ($path in @($InstallRoot, $bin, (Join-Path $InstallRoot 'versions'), $ve
 $shimText = "@echo off`r`n`"%~dp0..\versions\$Version\ailearn.exe`" %*`r`nexit /b %ERRORLEVEL%`r`n"
 if (Test-Path -LiteralPath $shim) {
     $old = [IO.File]::ReadAllText($shim)
-    if ($old -notmatch '^@echo off
-"%~dp0\.\.\versions\v\d+\.\d+\.\d+\ailearn\.exe" %\*
-exit /b %ERRORLEVEL%
-$') {
+    if ($old -notmatch '^@echo off\r\n"%~dp0\.\.\\versions\\v\d+\.\d+\.\d+\\ailearn\.exe" %\*\r\nexit /b %ERRORLEVEL%\r\n$') {
         throw 'Existing ailearn.cmd is not owned by this installer; preserved.'
     }
 }
