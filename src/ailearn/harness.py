@@ -36,6 +36,11 @@ def configure_codex(workspace: Path) -> None:
             with os.fdopen(fd, "w", encoding="utf-8") as stream:
                 stream.write(RULES)
             # Exclusive publication does not replace a concurrent user file.
-            os.link(stage, destination)
+            if os.name == "nt":
+                # Windows rename is atomic and fails if the destination exists.
+                # Hard-link creation can be denied by the restricted sandbox token.
+                stage.rename(destination)
+            else:
+                os.link(stage, destination)
         finally:
             stage.unlink(missing_ok=True)

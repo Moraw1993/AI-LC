@@ -156,8 +156,7 @@ the CLI also checks registered files exist. Preserve other referenced artifacts 
 
 ## CLI
 
-Run these through `ailearn COMMAND`. Installed skills
-use this installed ailearn command or imports from another environment.
+Run these through `ailearn COMMAND`. Installed skills use the same executable.
 
 | Command | Purpose |
 | --- | --- |
