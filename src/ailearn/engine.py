@@ -3,7 +3,16 @@
 from datetime import datetime, timedelta
 
 from ailearn.graph import Graph, required
-from ailearn.models import Dimension, Evidence, Knowledge, Scope, Snapshot, Stage, now
+from ailearn.models import (
+    Dimension,
+    Evidence,
+    Knowledge,
+    Scope,
+    Snapshot,
+    Stage,
+    active_evidence,
+    now,
+)
 from ailearn.onboarding import diagnostic_brief
 
 INTERVALS = (1, 3, 7, 14, 30, 60)
@@ -24,7 +33,7 @@ def qualifies(e: Evidence, threshold: int) -> bool:
 def passed(state: Snapshot, key: str, dimension: Dimension) -> bool:
     threshold = Graph(state.domains).nodes[key].threshold
     attempts: set[str] = set()
-    for e in state.evidence:
+    for e in active_evidence(state):
         if e.competency != key or e.kind in NON_EVIDENCE:
             continue
         # A failed delayed retrieval demonstrates forgetting, not merely a missing
@@ -47,9 +56,19 @@ def mastered(state: Snapshot, key: str) -> bool:
     )
 
 
-def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> None:
+def record(
+    state: Snapshot,
+    evidence: Evidence,
+    at: datetime | None = None,
+    replace_id: str | None = None,
+) -> None:
     # Public API callers may have mutated a model after construction.
     evidence = Evidence.model_validate(evidence.model_dump())
+    if evidence.supersedes_id is not None:
+        if replace_id is None or evidence.supersedes_id != replace_id:
+            raise ValueError("use --replace to explicitly replace an existing assessment")
+    elif replace_id is not None:
+        evidence.supersedes_id = replace_id
     at = at or now()
     graph = Graph(state.domains)
     if evidence.competency not in graph.nodes:
@@ -72,12 +91,39 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
         raise ValueError("future evidence is not allowed")
     if state.evidence and evidence.timestamp < state.evidence[-1].timestamp:
         raise ValueError("evidence must be recorded in chronological order")
-    if any(
-        e.id == evidence.id
-        or (e.attempt_id == evidence.attempt_id and e.dimension == evidence.dimension)
-        for e in state.evidence
+    if any(e.id == evidence.id for e in state.evidence):
+        raise ValueError(f"duplicate evidence ID: {evidence.id}")
+    previous = next((e for e in state.evidence if e.id == replace_id), None)
+    if (
+        replace_id is not None
+        and state.intake
+        and state.intake.baseline
+        and replace_id in state.intake.baseline.evidence_ids
     ):
-        raise ValueError("duplicate evidence ID or attempt/dimension")
+        raise ValueError("cannot replace evidence used by the completed baseline")
+    duplicate = next(
+        (
+            e
+            for e in active_evidence(state)
+            if e.attempt_id == evidence.attempt_id and e.dimension == evidence.dimension
+        ),
+        None,
+    )
+    if replace_id is None and duplicate is not None:
+        raise ValueError(
+            f"duplicate attempt/dimension; use --replace {duplicate.id} to correct this assessment"
+        )
+    if replace_id is not None:
+        if previous is None or duplicate is None or duplicate.id != replace_id:
+            raise ValueError(
+                "--replace must identify the active evidence for the same attempt and dimension"
+            )
+        if (previous.attempt_id, previous.dimension, previous.competency) != (
+            evidence.attempt_id,
+            evidence.dimension,
+            evidence.competency,
+        ):
+            raise ValueError("replacement must keep the same attempt, dimension and competency")
     key = evidence.competency
     k = state.knowledge.get(key, Knowledge())
     threshold = graph.nodes[key].threshold
@@ -90,6 +136,17 @@ def record(state: Snapshot, evidence: Evidence, at: datetime | None = None) -> N
             raise ValueError("retention is only valid when a scheduled review is due")
     state.knowledge[key] = k
     state.evidence.append(evidence)
+    if replace_id is not None:
+        state.history.append(
+            {
+                "event": "evidence-revised",
+                "id": evidence.id,
+                "supersedes_id": replace_id,
+                "attempt_id": evidence.attempt_id,
+                "dimension": evidence.dimension.value,
+                "timestamp": evidence.timestamp.isoformat(),
+            }
+        )
     if evidence.kind in NON_EVIDENCE:
         if k.stage == Stage.UNSEEN:
             k.stage = Stage.EXPOSED
@@ -185,7 +242,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             )
             attempts = [
                 e
-                for e in state.evidence
+                for e in active_evidence(state)
                 if e.competency == key
                 and e.kind not in NON_EVIDENCE
                 and (
@@ -253,7 +310,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         ],
         "difficulty": max(1, state.knowledge.get(key, Knowledge()).levels.get(dimension, 0)),
         "recent_evidence": [
-            e.model_dump(mode="json") for e in state.evidence if e.competency == key
+            e.model_dump(mode="json") for e in active_evidence(state) if e.competency == key
         ][-6:],
         "instructions": "Generate a fresh task just in time. Learner attempts first. "
         "Assessor uses the response, rubric and sensors, not Teacher encouragement. "

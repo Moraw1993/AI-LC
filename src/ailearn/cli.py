@@ -13,7 +13,15 @@ from ailearn.data import SOURCES
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise, validate_artifacts
 from ailearn.graph import Graph, load_domains
-from ailearn.models import Baseline, Evidence, Exercise, LearningProfile, Scope, now
+from ailearn.models import (
+    Baseline,
+    Evidence,
+    Exercise,
+    LearningProfile,
+    Scope,
+    active_evidence,
+    now,
+)
 from ailearn.onboarding import complete_intake, diagnostic_brief, onboarding_brief
 from ailearn.sensors import run
 from ailearn.store import Store, dumps
@@ -48,6 +56,11 @@ def parser() -> argparse.ArgumentParser:
     evidence = commands.add_parser("record", help="Import independently assessed evidence JSON")
     evidence.add_argument("file", type=Path)
     evidence.add_argument("--sensors", type=Path, help="Run sensor inputs and attach fresh results")
+    evidence.add_argument(
+        "--replace",
+        metavar="EVIDENCE_ID",
+        help="Supersede a prior assessment for this attempt/dimension",
+    )
     sensor = commands.add_parser("sensors", help="Run deterministic checks from JSON inputs")
     sensor.add_argument("file", type=Path)
     export = commands.add_parser("export", help="Print portable state or evidence JSONL")
@@ -121,7 +134,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.sensors:
                 e.sensors = run(json.loads(args.sensors.read_text("utf-8")))
             with store.transaction() as state:
-                record(state, e)
+                record(state, e, replace_id=args.replace)
             print(f"Recorded {e.id}.")
         elif args.command == "sensors":
             results = run(json.loads(args.file.read_text("utf-8")))
@@ -150,7 +163,9 @@ def main(argv: list[str] | None = None) -> int:
                             "knowledge": {
                                 k: v.model_dump(mode="json") for k, v in state.knowledge.items()
                             },
-                            "evidence_count": len(state.evidence),
+                            "evidence_count": len(active_evidence(state)),
+                            "evidence_revision_count": len(state.evidence)
+                            - len(active_evidence(state)),
                             "next": next_action(state),
                         }
                     )
@@ -188,7 +203,7 @@ def main(argv: list[str] | None = None) -> int:
                 replay = state.model_copy(deep=True)
                 replay.knowledge, replay.evidence, replay.history, replay.session = {}, [], [], {}
                 for e in state.evidence:
-                    record(replay, e)
+                    record(replay, e, replace_id=e.supersedes_id)
                 if replay.knowledge != state.knowledge:
                     raise ValueError("knowledge snapshot differs from evidence replay")
                 print("OK: schema, domains, dependencies, evidence and derived knowledge.")

@@ -1,7 +1,7 @@
 """Conversation-first onboarding and diagnostic readiness, without an LLM client."""
 
 from ailearn.graph import Graph
-from ailearn.models import Baseline, Snapshot, now
+from ailearn.models import Baseline, Snapshot, active_evidence, now
 
 
 def onboarding_brief() -> dict:
@@ -23,7 +23,7 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
     if state.intake is None or state.intake.baseline is not None:
         return None
     profile = state.intake.profile
-    covered = {e.competency for e in state.evidence if diagnostic_result(e)}
+    covered = {e.competency for e in active_evidence(state) if diagnostic_result(e)}
     missing = [key for key in profile.diagnostic_competencies if key not in covered]
     key = missing[0] if missing else profile.diagnostic_competencies[-1]
     node = Graph(state.domains).nodes[key]
@@ -60,7 +60,7 @@ def complete_intake(state: Snapshot, baseline: Baseline) -> None:
         if state.intake.baseline == baseline:
             return
         raise ValueError("baseline already completed; preserve it and recompose through evidence")
-    selected = [e for e in state.evidence if e.id in baseline.evidence_ids]
+    selected = [e for e in active_evidence(state) if e.id in baseline.evidence_ids]
     if {e.id for e in selected} != set(baseline.evidence_ids):
         raise ValueError("baseline references unknown evidence IDs")
     if not all(diagnostic_result(e) for e in selected):

@@ -8,7 +8,7 @@ from ailearn.cli import main
 from ailearn.data import Dataset, Registry, Requirements
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.graph import Graph, load_domains
-from ailearn.models import Config, Dimension, Evidence, Snapshot, Stage, now
+from ailearn.models import Config, Dimension, Evidence, Snapshot, Stage, active_evidence, now
 from ailearn.sensors import baseline, finite, numeric, run, split
 from ailearn.store import Store
 
@@ -329,12 +329,46 @@ def test_duplicate_attempt_cannot_recover_after_failure(state):
     record(state, failed)
     repeated = evidence(attempt="a")
     repeated.id = "new-id-same-attempt"
-    with pytest.raises(ValueError, match="duplicate"):
+    with pytest.raises(ValueError, match="--replace"):
         record(state, repeated)
-    record(state, evidence(attempt="fresh-one"))
-    assert not mastered(state, "statistics.mean")
-    record(state, evidence(attempt="fresh-two"))
+    for attempt in ["fresh-one", "fresh-two"]:
+        record(state, evidence(attempt=attempt))
     assert mastered(state, "statistics.mean")
+    corrected_failure = evidence(attempt="failed")
+    corrected_failure.id = "corrected-failed-assessment"
+    corrected_failure.score = 0
+    record(state, corrected_failure, replace_id=failed.id)
+    assert not mastered(state, "statistics.mean")
+
+
+def test_assessment_can_be_audited_and_revised_for_same_attempt(state):
+    original = evidence(attempt="a")
+    original.score = 1
+    record(state, original)
+    corrected = evidence(attempt="a")
+    corrected.id = "corrected-assessment"
+    record(state, corrected, replace_id=original.id)
+    assert [item.id for item in state.evidence] == [original.id, corrected.id]
+    assert [item.id for item in active_evidence(state)] == [corrected.id]
+    assert state.evidence[1].supersedes_id == original.id
+    assert state.history[-2]["event"] == "evidence-revised"
+    assert not mastered(state, "statistics.mean")
+    record(state, evidence(attempt="b", dimension=Dimension.INTERPRETATION))
+    assert not mastered(state, "statistics.mean")
+
+
+def test_replacement_requires_current_matching_assessment(state):
+    original = evidence(attempt="a")
+    record(state, original)
+    with pytest.raises(ValueError, match="same attempt and dimension"):
+        record(state, evidence(attempt="b"), replace_id=original.id)
+    revised = evidence(attempt="a")
+    revised.id = "revision-one"
+    record(state, revised, replace_id=original.id)
+    again = evidence(attempt="a")
+    again.id = "revision-two"
+    with pytest.raises(ValueError, match="active evidence"):
+        record(state, again, replace_id=original.id)
 
 
 def test_mutated_contract_revalidated(state):
@@ -357,6 +391,20 @@ def test_doctor_replays_historical_reviews(tmp_path, state):
             evidence(dimension=Dimension.RETENTION, kind="delayed-retrieval", timestamp=due),
             at=due,
         )
+    assert main(["--workspace", str(tmp_path), "doctor"]) == 0
+
+
+def test_doctor_replays_assessment_revisions(tmp_path, state):
+    store = Store(tmp_path)
+    store.init(state.config, state.domains)
+    original = evidence(attempt="a")
+    corrected = evidence(attempt="a")
+    corrected.id = "corrected"
+    corrected.score = 4
+    corrected.timestamp = original.timestamp + timedelta(seconds=1)
+    with store.transaction() as saved:
+        record(saved, original)
+        record(saved, corrected, replace_id=original.id)
     assert main(["--workspace", str(tmp_path), "doctor"]) == 0
 
 
