@@ -9,14 +9,14 @@ Read shared policy and Lab Coach instructions; use the active course's profile a
 Before baseline completion create diagnostic tasks only. Generate a fresh task for the
 needed outcome and difficulty; never choose from a static exercise bank.
 
-Read `python .ai-learning/commands/ailearn.py schema Exercise`. Write a specification JSON with
+Read `ailearn schema Exercise`. Write a specification JSON with
 lesson, topic, attempt (1..999), competency, kind (diagnostic/practice/assessment),
 instructions and source. Each file addresses one focused problem. Include small inputs,
 the expected interface and TODOs/pass for learner work, not the completed solution.
 Include a manual check or expected properties without leaking an assessment answer.
 Keep the entire generated file including comments at most 80 lines.
 
-Run `python .ai-learning/commands/ailearn.py exercise spec.json` with the active workspace or from its hub. The CLI
+Run `ailearn exercise spec.json` with the active workspace or from its hub. The CLI
 validates syntax without executing code and registers a file such as
 `lessons/lesson_001_topic_002_attempt_003_statistics_mean.py` with ID `L001-T002-A003`.
 Use returned metadata exactly. Reuse the lesson/topic for retries with increasing
