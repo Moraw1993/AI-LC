@@ -4,7 +4,7 @@ AI-LC is an evidence-driven framework for adaptive technical learning. It decide
 a learner should do next from prerequisites, demonstrated dimensions, misconceptions and
 reviews due. It is a learning lifecycle engine, not a static course or exercise bank.
 
-Version 0.1 supplies a Python CLI, deterministic core and instructions for an external AI
+Version 0.2 supplies a native executable and Python CLI, deterministic core and instructions for an external AI
 harness. The harness performs teaching and just-in-time exercise generation. No API key,
 model SDK, web server or autonomous chat runtime is required.
 
