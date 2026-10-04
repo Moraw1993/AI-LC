@@ -112,6 +112,15 @@ def test_retention_delay_and_intervals(state):
     assert not mastered(state, "statistics.mean")
     assert state.knowledge["statistics.mean"].stage == Stage.PRACTICED
     assert next_action(state, at=due2)["scope"] == "remediate"
+    corrected = evidence(
+        dimension=Dimension.RETENTION,
+        attempt="failed",
+        kind="delayed-retrieval",
+    )
+    corrected.id = "corrected-review"
+    corrected.timestamp = failed.timestamp + timedelta(seconds=1)
+    record(state, corrected, at=corrected.timestamp, replace_id=failed.id)
+    assert mastered(state, "statistics.mean")
 
 
 def test_duplicate_future_and_sensor_failure(state):
@@ -355,6 +364,18 @@ def test_assessment_can_be_audited_and_revised_for_same_attempt(state):
     assert not mastered(state, "statistics.mean")
     record(state, evidence(attempt="b", dimension=Dimension.INTERPRETATION))
     assert not mastered(state, "statistics.mean")
+
+
+def test_replacement_removes_superseded_misconception(state):
+    demonstrate(state, "statistics.mean")
+    failed = evidence(attempt="misconception", misconceptions=["mean-is-median"])
+    failed.score = 1
+    record(state, failed)
+    corrected = evidence(attempt="misconception")
+    corrected.id = "corrected-misconception"
+    record(state, corrected, replace_id=failed.id)
+    assert "mean-is-median" not in state.knowledge["statistics.mean"].misconceptions
+    assert mastered(state, "statistics.mean")
 
 
 def test_replacement_requires_current_matching_assessment(state):

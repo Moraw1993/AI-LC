@@ -129,9 +129,13 @@ def record(
     threshold = graph.nodes[key].threshold
     good = qualifies(evidence, threshold)
     was_mastered = mastered(state, key)
-    if evidence.dimension in {Dimension.TRANSFER, Dimension.RETENTION} and not was_mastered:
+    if (
+        replace_id is None
+        and evidence.dimension in {Dimension.TRANSFER, Dimension.RETENTION}
+        and not was_mastered
+    ):
         raise ValueError("transfer and retention require demonstrated core mastery first")
-    if evidence.kind == "delayed-retrieval":
+    if replace_id is None and evidence.kind == "delayed-retrieval":
         if k.review_due is None or evidence.timestamp < k.review_due:
             raise ValueError("retention is only valid when a scheduled review is due")
     state.knowledge[key] = k
@@ -152,10 +156,14 @@ def record(
             k.stage = Stage.EXPOSED
     else:
         k.levels[evidence.dimension] = evidence.score
-        active = set(k.misconceptions) | set(evidence.misconceptions)
-        if good:
-            active -= set(evidence.resolves)
-        k.misconceptions = sorted(active)
+        active_misconceptions: set[str] = set()
+        for item in active_evidence(state):
+            if item.competency != key or item.kind in NON_EVIDENCE:
+                continue
+            active_misconceptions.update(item.misconceptions)
+            if qualifies(item, threshold):
+                active_misconceptions.difference_update(item.resolves)
+        k.misconceptions = sorted(active_misconceptions)
         if mastered(state, key):
             k.stage = Stage.DEMONSTRATED
             if passed(state, key, Dimension.TRANSFER):
