@@ -108,3 +108,10 @@ authorization; ordinary feature merges never create tags or releases.
 Installer verification can use `-ReleaseDirectory dist -Version vX.Y.Z -NoModifyPath`
 on Windows, or `RELEASE_DIRECTORY`, `VERSION`, `AILEARN_INSTALL_ROOT`, `AILEARN_BIN_DIR`
 on Unix. These support offline validation without changing the actual user installation.
+
+If publication fails after an annotated main tag was created, do not move the tag.
+The native-release workflow supports a manual `release_tag` input. Run it from the
+reviewed workflow revision with the existing tag; it checks out that immutable release,
+rebuilds/tests every native asset, fetches and validates the actual annotated remote tag
+object and verifies main ancestry before publishing. This also avoids actions/checkout
+projecting a tag name onto a commit-only local ref. Never publish unchecked artifacts.
