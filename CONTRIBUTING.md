@@ -2,7 +2,8 @@
 
 This repository is the implementation workspace for AI-LC. Learner sessions, learning
 plans, personal artifacts and learning state belong in a separate directory outside it.
-Domain packs and agent templates under src are product resources and remain versioned.
+Agent templates under src are product resources and remain versioned. Course-specific domain
+packs are authored in learner workspaces and are never bundled as default curricula.
 
 ## Branches and commits
 
@@ -99,7 +100,7 @@ release merge is a required release step, not an automatic action in this versio
 Development uses uv; release users do not. `uv run python scripts/build_native.py`
 builds a PyInstaller executable for the current platform and writes its SHA256 file.
 The native-release PR workflow builds all supported platform assets and smoke-tests
-packaged domains, neutral configuration and installers. Require all native jobs before
+packaged schema/resources, neutral configuration and installers. Require all native jobs before
 integration. On an annotated release tag matching the package version, the same workflow
 publishes a GitHub release only after native checks and verification that the tagged
 commit belongs to main. Publishing this release workflow requires explicit release

@@ -60,7 +60,7 @@ class Domain(Model):
     schema_version: Literal[1] = 1
     id: str = Field(pattern=r"^[a-z][a-z-]*$")
     name: str
-    targets: dict[Literal["beginner", "mid", "advanced"], list[str]]
+    targets: dict[str, list[str]] = Field(min_length=1)
     competencies: list[Competency] = Field(min_length=1)
     references: list[str] = Field(default_factory=list)
 
@@ -69,7 +69,7 @@ class Config(Model):
     schema_version: Literal[1] = 1
     learner: str = Field(default="Learner", min_length=1)
     domain: str
-    target: Literal["beginner", "mid", "advanced"] = "mid"
+    target: str = Field(default="mid", min_length=1)
     depth: Literal["minimal", "standard", "comprehensive"] = "standard"
     preferences: list[str] = Field(default_factory=list)
 
@@ -80,7 +80,7 @@ class LearningProfile(Model):
     learner: str = Field(min_length=1)
     goal: str = Field(min_length=1)
     domain: str = Field(min_length=1)
-    target: Literal["beginner", "mid", "advanced"]
+    target: str = Field(min_length=1)
     target_description: str = Field(min_length=1)
     depth: Literal["minimal", "standard", "comprehensive"]
     workspace_name: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
@@ -108,6 +108,39 @@ class LearningProfile(Model):
 class Baseline(Model):
     summary: str = Field(min_length=1)
     evidence_ids: list[str] = Field(min_length=1)
+
+
+class PlanPhase(StrEnum):
+    OVERVIEW = "overview"
+    ADAPTIVE = "adaptive"
+
+
+class PlanStage(Model):
+    title: str = Field(min_length=1)
+    outcomes: list[str] = Field(min_length=1)
+    competencies: list[str] = Field(min_length=1)
+
+
+class CoursePlanProposal(Model):
+    phase: PlanPhase
+    goal: str = Field(min_length=1)
+    domain: str = Field(min_length=1)
+    target: str = Field(min_length=1)
+    target_description: str = Field(min_length=1)
+    depth: Literal["minimal", "standard", "comprehensive"]
+    title: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    stages: list[PlanStage] = Field(min_length=1)
+    working_method: str = Field(min_length=1)
+    projects: list[str] = Field(default_factory=list)
+    role_responsibilities: list[str] = Field(min_length=1)
+
+
+class CoursePlan(CoursePlanProposal):
+    version: int = Field(ge=1)
+    status: Literal["proposed", "approved", "superseded"]
+    created_at: AwareDatetime = Field(default_factory=now)
+    approved_at: AwareDatetime | None = None
 
 
 class Intake(Model):
@@ -217,6 +250,8 @@ class Snapshot(Model):
     session: dict = Field(default_factory=dict)
     intake: Intake | None = None
     exercises: list[ExerciseArtifact] = Field(default_factory=list)
+    plans: list[CoursePlan] = Field(default_factory=list)
+    plan_workflow: bool = False
 
 
 def active_evidence(snapshot: Snapshot) -> list[Evidence]:

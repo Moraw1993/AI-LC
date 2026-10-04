@@ -40,7 +40,9 @@ def main() -> None:
     result = subprocess.check_output([str(binary.resolve()), "--version"], text=True).strip()
     if result != __version__:
         raise SystemExit("Binary version mismatch")
-    subprocess.run([str(binary.resolve()), "domains"], check=True, stdout=subprocess.DEVNULL)
+    subprocess.run(
+        [str(binary.resolve()), "schema", "Domain"], check=True, stdout=subprocess.DEVNULL
+    )
     binary.with_name(binary.name + ".sha256").write_text(
         hashlib.sha256(binary.read_bytes()).hexdigest() + "  " + binary.name + "\n", "utf-8"
     )

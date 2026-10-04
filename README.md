@@ -11,8 +11,9 @@ model SDK, web server or autonomous chat runtime is required.
 ## Installation
 
 Use a release installer. The installed `ailearn` executable includes Python, dependencies,
-domain packs and teaching instructions. No Python, uv, Git or environment activation is
-required for release users. Install once per user and configure each learning project.
+and teaching instructions, but no preset subject packs or curricula. No Python, uv, Git or
+environment activation is required for release users. Install once per user and configure
+each learning project.
 
 Windows PowerShell:
 
@@ -66,17 +67,27 @@ named Assessor profile for formal checkpoints; it does not install a model runti
 tutor's chosen name lives in the agreed profile.
 
 Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
-`ailearn configure profile.json [--packs packs]`, creating
-`workspaces/<agreed-name>`.
-Teacher then gathers relevant prerequisite knowledge and current ability through small
-diagnostics; independent Assessor records genuine answers. A failed answer such as
-"I don't know" establishes a gap, not mastery. Explaining the answer switches to teaching;
-that attempt cannot be counted as independent.
+`ailearn configure profile.json --packs packs`, creating
+`workspaces/<agreed-name>`. Before diagnosis, Curriculum Architect prepares an overview
+plan and Master presents its goal, stages, working method, projects and role boundaries.
+The learner reviews it and approves the proposed version before diagnosis begins.
 
-Only after the local `complete-intake baseline.json` command verifies diagnostic coverage
-can the Curriculum Architect build a lesson roadmap. Master then uses local `plan` and `session`.
-Starter packs are optional examples; the external AI can author validated packs for other
-subjects. The lesson sequence adapts to evidence, prerequisites and the agreed goal.
+Teacher then gathers relevant prerequisite knowledge and current ability through the
+agreed diagnostic competencies; independent Assessor records genuine answers. A failed
+answer such as "I don't know" establishes a gap, not mastery. Explaining the answer
+switches to teaching; that attempt cannot be counted as independent. Only after
+`complete-intake baseline.json` verifies the agreed diagnostic coverage does Curriculum
+Architect prepare a personalized adaptive roadmap. Master presents it and obtains approval
+before the first lesson. Routine next-step changes from evidence do not require approval;
+material route changes within the agreed target are versioned and require renewed approval.
+Changing the target or diagnostic scope requires agreeing a new profile and course.
+
+AI-LC ships no subject packs or sample curricula. Curriculum Architect authors and validates
+a competency graph for the learner's agreed goal before course configuration. The lesson
+sequence and roadmap are then adapted to diagnostic evidence, prerequisites and that goal. Run
+`ailearn schema CoursePlanProposal` for the plan contract; use `ailearn plan` to inspect
+plans, `ailearn plan propose FILE` to submit one, `ailearn plan approve VERSION` to approve,
+and `ailearn plan revise FILE` to replace the current proposal or approved version.
 
 Root `AGENTS.md` is created only if absent. When instructions already exist, load
 `.ai-learning/AGENTS.md` explicitly in the harness. Reinitializing preserves progress.
@@ -118,16 +129,15 @@ is unavailable, use a standalone HTML animation or an explicitly labeled storybo
 
 Lab Coach uses `$ai-lc-python-lab` and the local `exercise spec.json` command to create fresh tasks
 of at most 80 lines, including instructions. Each attempt has its own file, for example
-`lessons/lesson_001_topic_002_attempt_003_statistics_mean.py`. Existing attempts are never
+`lessons/lesson_001_topic_002_attempt_003_course_competency.py`. Existing attempts are never
 overwritten. The returned ID, such as `L001-T002-A003`, and path are required for modern
 course implementation evidence. The CLI validates syntax and saves the scaffold; it
 never executes learner code. No static exercise bank is supplied.
 
-For time series, the prerequisite closure includes mean, variance, covariance and
-correlation. If a diagnostic reveals weak covariance interpretation, the Conductor routes
-Teacher and Lab Coach to covariance. Assessor separately evaluates the learner's artifact.
-Two independent passing attempts for each required dimension permit progression back
-toward autocorrelation. See [the runnable example](examples/time_series.py).
+The external Curriculum Architect creates only competencies and prerequisites relevant to
+the agreed goal. Master and the learner review the goal before configuration; the learner
+reviews and approves both the overview and evidence-informed roadmap. No example subject,
+topic sequence or exercise bank is bundled.
 
 Assessor produces JSON matching `ailearn.models.Evidence`. Print its complete contract with:
 
@@ -139,18 +149,18 @@ An example of one independent result (not enough alone for mastery):
 
 ```json
 {
-  "id": "covariance-interpretation-1",
-  "attempt_id": "unseen-scatterplot-1",
-  "competency": "statistics.covariance",
+  "id": "outcome-interpretation-attempt-1",
+  "attempt_id": "course-task-1",
+  "competency": "course.outcome",
   "dimension": "interpretation",
   "score": 3,
   "independent": true,
   "hints": 0,
   "confidence": 0.9,
   "assessor": "external-independent-assessor",
-  "artifact": "answers/scatterplot-1.md",
+  "artifact": "answers/course-task-1.md",
   "kind": "assessment",
-  "notes": "Correct sign, units and limitation; no causal claim."
+  "notes": "Evidence tied to the agreed learning outcome and rubric."
 }
 ```
 
@@ -174,9 +184,12 @@ Run these through `ailearn COMMAND`. Installed skills use the same executable.
 | `configure FILE --packs DIR` | Create/activate a course from an explicitly agreed profile |
 | `complete-intake FILE` | Confirm baseline summary and genuine diagnostic evidence IDs |
 | `exercise FILE` | Register a fresh short Python task with lesson/topic/attempt numbers |
-| `domains` | List validated built-in domains |
+| `domains --packs DIR` | Validate and list the agent-authored pack files in a directory |
 | `status` | Show dimension levels, stages, misconceptions and next action |
-| `plan` | Recompute target dependency closure and readiness |
+| `plan` | Show approved plans, dependency closure and the next required action |
+| `plan propose FILE` | Propose the overview or post-diagnosis adaptive plan |
+| `plan approve VERSION` | Approve the currently proposed plan version |
+| `plan revise FILE` | Replace a plan with a new version requiring approval |
 | `session --scope SCOPE` | Save a task brief for the harness |
 | `record FILE --sensors FILE --replace EVIDENCE_ID` | Validate evidence and optionally revise a prior judgment for the same attempt/dimension |
 | `doctor` | Validate schema, DAG and evidence replay |
@@ -235,11 +248,10 @@ uv run pytest
 uv run ruff check .
 uv run ruff format --check .
 uv build
-uv run python examples/time_series.py
 ```
 
-Starter packs cover statistics (6 competencies), machine learning (4) and time series (4).
-They supply outcomes and rubrics, not exercise catalogs or an imposed subject choice.
+The wheel contains no built-in subject domains or course templates. Agents author a
+course-specific competency graph from the learner's goal and validate it before use.
 
 ## Existing v0.1 workspaces
 
@@ -251,7 +263,7 @@ adds local helpers and skills while preserving its snapshot and instructions. Th
 installer can attach runtime to an existing course when its packaged files match; it
 does not silently replace older or edited skills/commands. Existing conflicting skill
 files fail clearly and are preserved. The internal `Store.init(Config, domains)` API
-remains available for legacy integrations and the deterministic runnable example.
+remains available for legacy integrations.
 
 Keep `.ai-lc/`, `.ai-lc-install-*/`, `.ai-learning/`, learner artifacts and personal answers
 out of version control. AI-LC does not rewrite an existing project's .gitignore; add these

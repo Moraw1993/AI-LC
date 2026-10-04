@@ -21,6 +21,12 @@ def test_neutral_codex_config_preserves_user_files(tmp_path):
     assert (tmp_path / "AGENTS.md").read_text() == "User instructions"
     assert (codex / "config.toml").read_text() == 'sandbox_mode = "read-only"'
     assert (tmp_path / ".agents/skills/ai-lc-master/SKILL.md").is_file()
+    learner_instructions = (tmp_path / ".ai-learning/AGENTS.md").read_text("utf-8")
+    assert "Conversation stages and transitions" in learner_instructions
+    assert "Do not begin diagnosis before that approval" in learner_instructions
+    assert "Ordinary checks" in learner_instructions
+    assert "Master owns learner communication" in learner_instructions
+    assert "reviewed and approved the course overview" in learner_instructions
     assessor = tomllib.loads((codex / "agents/assessor.toml").read_text("utf-8"))
     assert assessor["name"] == "assessor"
     assert assessor["model_reasoning_effort"] == "low"

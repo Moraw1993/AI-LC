@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 import pytest
+from domain_fixtures import PACKS, load_test_domains
 from yaml import YAMLError
 
 from ailearn.cli import main
@@ -15,7 +16,9 @@ from ailearn.store import Store
 
 @pytest.fixture
 def state():
-    return Snapshot(config=Config(domain="time-series", depth="minimal"), domains=load_domains())
+    return Snapshot(
+        config=Config(domain="time-series", depth="minimal"), domains=load_test_domains()
+    )
 
 
 def evidence(key="statistics.mean", dimension=Dimension.CONCEPTUAL, attempt="one", **kw):
@@ -44,8 +47,17 @@ def test_packs_and_cross_domain_closure(state):
     graph = Graph(state.domains)
     path = graph.closure(["time_series.autocorrelation"])
     assert path.index("statistics.covariance") < path.index("time_series.autocorrelation")
-    assert len(load_domains()) == 3
+    assert len(load_test_domains()) == 3
     assert "machine_learning.validation" in roadmap(state)
+
+
+def test_course_targets_use_learner_specific_ids(state):
+    domain = next(d for d in state.domains if d.id == "time-series")
+    domain.targets = {"forecast-with-no-leakage": ["time_series.autocorrelation"]}
+    graph = Graph(state.domains)
+    assert graph.target_closure("time-series", "forecast-with-no-leakage")[-1]
+    with pytest.raises(ValueError, match="unknown target"):
+        graph.target_closure("time-series", "unrecognized-target")
 
 
 def test_missing_cycle_duplicate_rejected(state):
@@ -232,10 +244,10 @@ def test_safe_init_persistence_lock_and_corruption(tmp_path, state):
 
 def test_cli_workflow(tmp_path, capsys):
     prefix = ["--workspace", str(tmp_path)]
-    Store(tmp_path).init(Config(domain="time-series", depth="minimal"), load_domains())
+    Store(tmp_path).init(Config(domain="time-series", depth="minimal"), load_test_domains())
     assert main(prefix + ["init"]) == 0
     assert main(prefix + ["init"]) == 0
-    for command in ["status", "plan", "session", "history", "doctor", "export", "domains"]:
+    for command in ["status", "plan", "session", "history", "doctor", "export"]:
         assert main(prefix + [command]) == 0
     efile = tmp_path / "result.json"
     efile.write_text(evidence().model_dump_json(), "utf-8")
@@ -247,7 +259,7 @@ def test_cli_workflow(tmp_path, capsys):
 
 def test_explore_no_mastery(tmp_path):
     prefix = ["--workspace", str(tmp_path)]
-    Store(tmp_path).init(Config(domain="statistics"), load_domains())
+    Store(tmp_path).init(Config(domain="statistics"), load_test_domains())
     main(prefix + ["session", "--scope", "explore"])
     artifact = tmp_path / "e.json"
     artifact.write_text(evidence().model_dump_json(), "utf-8")
@@ -389,14 +401,24 @@ def test_uninitialized_and_invalid_custom_packs(tmp_path):
         pass
     with pytest.raises(ValueError, match="no .yml"):
         load_domains(tmp_path)
+    with pytest.raises(ValueError, match="agent-authored"):
+        load_domains()
     (tmp_path / "broken.yml").write_text("not: [valid", "utf-8")
     with pytest.raises(YAMLError):
         load_domains(tmp_path)
 
 
+def test_no_subject_curricula_are_bundled_and_agent_packs_validate(capsys):
+    from importlib.resources import files
+
+    assert not files("ailearn").joinpath("resources/domains").exists()
+    assert main(["domains", "--packs", str(PACKS)]) == 0
+    assert len(json.loads(capsys.readouterr().out)) == 3
+
+
 def test_cli_sensor_record_and_portable_export(tmp_path, capsys):
     prefix = ["--workspace", str(tmp_path)]
-    Store(tmp_path).init(Config(domain="statistics"), load_domains())
+    Store(tmp_path).init(Config(domain="statistics"), load_test_domains())
     efile = tmp_path / "result.json"
     efile.write_text(evidence().model_dump_json(), "utf-8")
     sensor = tmp_path / "sensors.json"

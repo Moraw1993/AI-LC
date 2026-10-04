@@ -17,14 +17,16 @@ If phase is intent-discovery, start a short conversation in the learner's langua
 4. Agree a tutor name and a filesystem-safe workspace name. Propose choices when helpful.
 
 Do not silently choose statistics, an intermediate target, a tutor name or a course.
-If the learner cannot name a level, agree concrete target abilities; map those to a
-target only after clarification. Self-report is context, never mastery. Ask a few
+If the learner cannot name a level, clarify the concrete target ability; ask Curriculum
+Architect to represent that agreed outcome with a learner-specific target ID. Self-report
+is context, never mastery. Ask a few
 questions at a time, not a technical configuration questionnaire.
 
-Delegate competency modeling to Curriculum Architect after goal agreement. Built-in
-packs are starter examples, not a mandatory list of subjects. For any other topic,
-generate a fresh YAML domain pack under the hub's `packs/`, using the installed
-`ailearn.models.Domain` schema and its target/dependency conventions. Validate using
+Delegate competency modeling to Curriculum Architect after goal agreement. AI-LC ships
+no subjects, course outlines, or competency packs. Generate a fresh YAML domain pack under
+the hub's `packs/`, using the installed `ailearn.models.Domain` schema and its target and
+dependency conventions. Use a target ID derived from the learner-agreed outcome; do not
+impose a generic target label. Validate with `ailearn domains --packs packs`, then use
 `ailearn configure profile.json --packs packs`. Never add a static exercise bank.
 Select a small nonempty set of diagnostic competencies from the goal's prerequisite
 closure needed to establish a useful starting point. This is assessment scoping,
@@ -34,15 +36,25 @@ Read `ailearn schema LearningProfile`. Save the explicitly
 agreed fields in `profile.json`: learner, goal, domain, target, target_description, depth,
 workspace_name (lowercase letters/digits/hyphens), agent_name, language, working_style
 (nonempty list), prior_knowledge and diagnostic_competencies (nonempty list).
-Run `ailearn configure profile.json` from the hub, adding `--packs packs` for custom packs.
+Run `ailearn configure profile.json --packs packs` from the hub.
 The command creates `workspaces/<workspace_name>` and activates it; repeating an
 identical profile preserves progress. Never edit state.json manually.
 
-Invoke `$ai-lc-diagnose` before constructing a lesson plan. Gather genuine responses;
-use independent Assessor only after each completed formal diagnostic response to record
-evidence and complete intake. During ordinary lessons, keep formative checks in Teacher's
-current conversation without spawning Assessor or creating Evidence. Then run `ailearn plan`
-and `ailearn session`, delegate only required roles, and keep returning to the agreed goal.
+After `configure`, ask Curriculum Architect for an overview `CoursePlanProposal` and
+present its goal, stages, working method, projects and role boundaries. Wait for explicit
+learner approval, then run `ailearn plan approve VERSION`. Only then invoke
+`$ai-lc-diagnose`; keep diagnosis within the agreed competency list, and use independent
+Assessor after each completed formal diagnostic response. After `complete-intake`, ask
+Curriculum Architect for an adaptive `CoursePlanProposal`, present the personalized route
+and wait for approval before teaching. At each transition, tell the learner the current
+stage, purpose, expected activity and completion condition; close with result and next
+stage. During ordinary lessons, keep formative checks in Teacher's current conversation
+without invoking Assessor or creating Evidence. Formal practice, assessment, project and
+due-review checkpoints must be announced before the learner attempts them. Then run
+`ailearn plan` or `ailearn session`, delegate only required roles, and keep returning to
+the agreed goal. Revise and re-approve a plan for material route changes within the agreed
+target; routine evidence-based next-step adaptation does not require approval. Changing
+the target or diagnostic scope requires a newly agreed profile and course.
 Teacher may use materials, visualization and motion skills; Lab Coach creates short
 numbered Python tasks through `$ai-lc-python-lab`. Actual tool availability determines media.
 

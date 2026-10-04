@@ -1,7 +1,7 @@
 # Architecture
 
-`models.py` defines strict Pydantic contracts. `graph.py` loads packaged or additive YAML
-packs, rejects duplicate IDs, dangling dependencies and cycles, and returns topological
+`models.py` defines strict Pydantic contracts. `graph.py` loads course-authored YAML packs,
+rejects duplicate IDs, dangling dependencies and cycles, and returns topological
 prerequisite closures. The initialized snapshot embeds packs, ensuring future package
 updates do not silently change an existing learner's curriculum.
 
@@ -9,13 +9,17 @@ updates do not silently change an existing learner's curriculum.
 native-discoverable `.agents/skills/*/SKILL.md` resources. It does not load a domain or
 select a target. The external Master gathers explicit intent, target ability, previous
 experience, language, style, tutor display name and course name. `configure` validates
-a LearningProfile and packs, creates `workspaces/<name>`, and atomically publishes that
-active course reference in the hub. Commands from the hub route to the active course;
+a LearningProfile and course-authored packs, creates `workspaces/<name>`, enables versioned plan gates
+for new courses, and atomically publishes that active course reference in the hub. New
+learners approve an overview before diagnosis and an adaptive plan after baseline before
+teaching. Commands from the hub route to the active course;
 commands from the course work directly. Reusing a name requires the same profile and packs.
 
 Release distribution uses PyInstaller to bundle Python, dependencies and all ailearn
 resources into one executable per OS/architecture. `scripts/build_native.py` verifies
-the binary version and domain loading and writes SHA256 files. Tag builds validate the
+the binary version and public schema access and writes SHA256 files. The executable ships
+no subject packs: agents create and validate course-specific packs after installation, and
+each pack is embedded in that learner's snapshot. Tag builds validate the
 package/tag version and publish binaries plus native shell/PowerShell installers.
 Installers check checksums and executable versions before publishing immutable version
 directories and selecting the user command. They never rewrite learner state.
@@ -34,19 +38,23 @@ ancestor runtime. Legacy users substitute that command for `ailearn` when no glo
 command exists. Release usage requires no installed Python or uv; development uses uv.
 `schema MODEL` exposes contracts without imports in an unknown interpreter.
 
-`onboarding.py` gates modern course planning on a Baseline. Teacher gathers knowledge
-and genuine responses; independent Assessor records diagnostic evidence. The agreed
-diagnostic competencies must belong to the selected target's prerequisite closure.
+`onboarding.py` gates new-course diagnosis on an approved overview and teaching on both
+a Baseline and an approved adaptive plan. Course plans are typed, versioned proposals;
+their stages cover every competency in the selected target's prerequisite closure exactly
+once. Approval and revision decisions are appended to history. Routine evidence-driven
+next-action changes need no approval. Legacy snapshots default to no plan workflow and
+remain readable. Teacher gathers knowledge and genuine responses; independent Assessor
+records diagnostic evidence. Diagnostic evidence stays within the agreed competency set.
 Each needs independent, unhinted diagnostic coverage with confidence >= 0.8; an actual
 failed answer qualifies as diagnosis, not mastery. Self-report, exposure and hints cannot
 complete intake. `complete-intake` records a summary with validated evidence IDs.
 The snapshot's optional intake preserves old v0.1 workspaces without invented baselines.
 State loading checks profile/config agreement, diagnostic scope and baseline references.
 
-`engine.py` is the deterministic Learning Conductor core. Before baseline completion,
-session/plan briefs route to diagnosis regardless of requested learning scope. Curriculum
-design then resolves target closure. Learning routes missing dimensions to practice
-or remediation. Consolidation prioritizes delayed reviews and application selects unseen
+`engine.py` is the deterministic Learning Conductor core. New-course session/plan briefs
+route to overview proposal/approval, baseline diagnosis, then adaptive-plan
+proposal/approval. Learning routes missing dimensions to practice or remediation only
+after these gates. Consolidation prioritizes delayed reviews and application selects unseen
 transfer tasks. The external Master role invokes specialist instructions for each brief.
 Ordinary lesson checks are formative and stay with Teacher in the active conversation;
 they do not create Evidence. Briefs mark whether a task is formative or a formal assessment
@@ -73,8 +81,8 @@ Failed delayed retrieval invalidates old passes across dimensions and requires r
 core evidence. Transfer and retention cannot be submitted before core mastery. Pending
 reviews of a regressed competency resume only after its core gate has been repaired.
 
-`store.py` writes one authoritative snapshot by temporary-file replacement. State, evidence
-and history commit together. An exclusive lock serializes CLI writers; a failed transaction
+`store.py` writes one authoritative snapshot by temporary-file replacement. State, course
+plans, evidence and history commit together. An exclusive lock serializes CLI writers; a failed transaction
 does not persist partial changes. Init stages the full directory and preserves existing
 AGENTS.md. Exports are read views, not independently authoritative files. There is no
 database or general multi-file commit protocol to reconcile. `doctor` replays evidence and compares

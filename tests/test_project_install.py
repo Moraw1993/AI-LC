@@ -5,10 +5,10 @@ import sys
 from pathlib import Path
 
 import pytest
+from domain_fixtures import load_test_domains
 
 from ailearn import installer
 from ailearn.cli import main
-from ailearn.graph import load_domains
 from ailearn.models import Config
 from ailearn.store import Store
 
@@ -83,7 +83,7 @@ def test_course_launcher_inherits_runtime_and_binds_course(project):
     from test_onboarding import profile
 
     installer.install(project, SOURCE)
-    course = Store(project).configure(profile(), load_domains())
+    course = Store(project).configure(profile(), load_test_domains())
     output = command(course.workspace, "status", cwd=project.parent)
     assert output.returncode == 0, output.stderr
     status = json.loads(output.stdout)
@@ -143,7 +143,7 @@ def test_existing_runtime_and_local_command_never_overwritten(project):
 
 
 def test_install_preserves_existing_legacy_snapshot(project):
-    Store(project).init(Config(domain="statistics"), load_domains())
+    Store(project).init(Config(domain="statistics"), load_test_domains())
     before = (project / ".ai-learning/state.json").read_bytes()
     installer.install(project, SOURCE)
     assert (project / ".ai-learning/state.json").read_bytes() == before

@@ -1,6 +1,5 @@
 """Pack loading and deterministic dependency validation."""
 
-from importlib.resources import files
 from pathlib import Path
 
 import yaml
@@ -9,21 +8,15 @@ from ailearn.models import Competency, Dimension, Domain
 
 
 def load_domains(custom: Path | None = None) -> list[Domain]:
-    resources = files("ailearn").joinpath("resources/domains")
+    if custom is None or not custom.is_dir():
+        raise ValueError("a course requires an agent-authored domain pack directory")
+    files_to_load = sorted(custom.glob("*.yml"))
+    if not files_to_load:
+        raise ValueError(f"no .yml domain packs found in {custom}")
     packs = [
-        Domain.model_validate(yaml.safe_load(p.read_text(encoding="utf-8")))
-        for p in sorted(resources.iterdir(), key=lambda p: p.name)
-        if p.name.endswith(".yml")
+        Domain.model_validate(yaml.safe_load(path.read_text(encoding="utf-8")))
+        for path in files_to_load
     ]
-    if custom:
-        if not custom.is_dir():
-            raise ValueError(f"custom packs directory does not exist: {custom}")
-        if not list(custom.glob("*.yml")):
-            raise ValueError(f"no .yml domain packs found in {custom}")
-        packs.extend(
-            Domain.model_validate(yaml.safe_load(p.read_text(encoding="utf-8")))
-            for p in sorted(custom.glob("*.yml"))
-        )
     Graph(packs)
     return packs
 
@@ -56,8 +49,6 @@ class Graph:
                 raise ValueError(f"missing dimension outcomes: {node.id}")
         self.closure(list(self.nodes))
         for domain in domains:
-            if set(domain.targets) != {"beginner", "mid", "advanced"}:
-                raise ValueError(f"missing targets: {domain.id}")
             for targets in domain.targets.values():
                 if not targets:
                     raise ValueError("target cannot be empty")
@@ -85,3 +76,13 @@ class Graph:
         for target in targets:
             visit(target)
         return result
+
+    def target_closure(self, domain_id: str, target_id: str) -> list[str]:
+        """Resolve an agent-authored target and its complete prerequisite graph."""
+        domain = self.domains.get(domain_id)
+        if domain is None:
+            raise ValueError(f"unknown domain: {domain_id}")
+        targets = domain.targets.get(target_id)
+        if targets is None:
+            raise ValueError(f"unknown target {target_id!r} for domain {domain_id!r}")
+        return self.closure(targets)

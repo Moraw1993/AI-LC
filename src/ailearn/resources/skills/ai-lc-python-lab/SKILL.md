@@ -18,7 +18,7 @@ Keep the entire generated file including comments at most 80 lines.
 
 Run `ailearn exercise spec.json` with the active workspace or from its hub. The CLI
 validates syntax without executing code and registers a file such as
-`lessons/lesson_001_topic_002_attempt_003_statistics_mean.py` with ID `L001-T002-A003`.
+`lessons/lesson_001_topic_002_attempt_003_course_competency.py` with ID `L001-T002-A003`.
 Use returned metadata exactly. Reuse the lesson/topic for retries with increasing
 attempt numbers; a lesson/topic stays tied to one competency. Never overwrite a previous
 attempt or the learner's edits. Use a new lesson/topic when changing competency.

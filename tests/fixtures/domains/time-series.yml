@@ -10,6 +10,10 @@
       "time_series.stationarity",
       "time_series.temporal_validation"
     ],
+    "forecasting-without-leakage": [
+      "time_series.stationarity",
+      "time_series.temporal_validation"
+    ],
     "advanced": [
       "time_series.ar_models"
     ]
