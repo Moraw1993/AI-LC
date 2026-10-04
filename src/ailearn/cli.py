@@ -11,8 +11,10 @@ from yaml import YAMLError
 from ailearn import __version__
 from ailearn.data import SOURCES
 from ailearn.engine import mastered, next_action, record, roadmap
+from ailearn.exercises import create_exercise, validate_artifacts
 from ailearn.graph import Graph, load_domains
-from ailearn.models import Config, Evidence, Scope, now
+from ailearn.models import Baseline, Evidence, Exercise, LearningProfile, Scope, now
+from ailearn.onboarding import complete_intake, diagnostic_brief, onboarding_brief
 from ailearn.sensors import run
 from ailearn.store import Store, dumps
 
@@ -22,15 +24,18 @@ def parser() -> argparse.ArgumentParser:
     p.add_argument("--version", action="version", version=__version__)
     p.add_argument("--workspace", type=Path, default=Path.cwd())
     commands = p.add_subparsers(dest="command", required=True)
-    init = commands.add_parser("init", help="Safely initialize a learning workspace")
-    init.add_argument("--learner", default="Learner")
-    init.add_argument("--domain", default="statistics")
-    init.add_argument("--target", choices=["beginner", "mid", "advanced"], default="mid")
-    init.add_argument(
-        "--depth", choices=["minimal", "standard", "comprehensive"], default="standard"
+    commands.add_parser("init", help="Install Master and teaching skills without choosing a topic")
+    configure = commands.add_parser(
+        "configure", help="Create a course from Master's agreed profile"
     )
-    init.add_argument("--packs", type=Path, help="Directory of additional YAML packs")
-    init.add_argument("--preference", action="append", default=[])
+    configure.add_argument("file", type=Path)
+    configure.add_argument("--packs", type=Path, help="Directory of additional YAML packs")
+    baseline = commands.add_parser(
+        "complete-intake", help="Confirm independently diagnosed baseline"
+    )
+    baseline.add_argument("file", type=Path)
+    exercise = commands.add_parser("exercise", help="Create a short numbered Python task")
+    exercise.add_argument("file", type=Path)
     commands.add_parser("domains", help="List validated built-in packs")
     commands.add_parser("status", help="Show demonstrated knowledge and review queue")
     commands.add_parser("doctor", help="Validate workspace, graph and audit log")
@@ -53,6 +58,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
     try:
         store = Store(args.workspace)
+        if args.command not in {"init", "configure", "domains", "sources", "sensors"}:
+            store = store.active()
+            if not (store.root / "state.json").exists():
+                if args.command in {"status", "plan", "session", "doctor"}:
+                    print(dumps(onboarding_brief()))
+                    return 0
+                raise ValueError("invoke $ai-lc-master and configure a learning profile first")
         if args.command == "domains":
             print(
                 dumps(
@@ -65,24 +77,32 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "sources":
             print(dumps(SOURCES))
         elif args.command == "init":
-            config = Config(
-                learner=args.learner,
-                domain=args.domain,
-                target=args.target,
-                depth=args.depth,
-                preferences=args.preference,
-            )
-            created = store.init(config, load_domains(args.packs))
+            created = store.bootstrap()
             print(
                 "Workspace initialized." if created else "Workspace already initialized; preserved."
             )
             print(f"Harness instructions: {store.root / 'AGENTS.md'}")
+            print("Open this directory in Codex and invoke $ai-lc-master to discuss your goal.")
             if (store.workspace / "AGENTS.md").read_text("utf-8") != (
                 store.root / "AGENTS.md"
             ).read_text("utf-8"):
                 print("Existing AGENTS.md preserved. Load .ai-learning/AGENTS.md in your harness.")
+        elif args.command == "configure":
+            profile = LearningProfile.model_validate_json(args.file.read_text("utf-8"))
+            course = store.configure(profile, load_domains(args.packs))
+            print(dumps({"workspace": str(course.workspace), "next": next_action(course.load())}))
+        elif args.command == "complete-intake":
+            baseline = Baseline.model_validate_json(args.file.read_text("utf-8"))
+            with store.transaction() as state:
+                complete_intake(state, baseline)
+            print("Baseline recorded; adaptive planning is now available.")
+        elif args.command == "exercise":
+            exercise = Exercise.model_validate_json(args.file.read_text("utf-8"))
+            print(dumps(create_exercise(store, exercise).model_dump(mode="json")))
         elif args.command == "record":
             e = Evidence.model_validate_json(args.file.read_text("utf-8"))
+            if e.dimension == "implementation":
+                validate_artifacts(store)
             if args.sensors:
                 e.sensors = run(json.loads(args.sensors.read_text("utf-8")))
             with store.transaction() as state:
@@ -108,6 +128,10 @@ def main(argv: list[str] | None = None) -> int:
                         {
                             "learner": state.config.learner,
                             "config": state.config.model_dump(mode="json"),
+                            "intake": state.intake.model_dump(mode="json")
+                            if state.intake
+                            else None,
+                            "workspace": str(store.workspace),
                             "knowledge": {
                                 k: v.model_dump(mode="json") for k, v in state.knowledge.items()
                             },
@@ -117,6 +141,11 @@ def main(argv: list[str] | None = None) -> int:
                     )
                 )
             elif args.command == "plan":
+                if diagnostic_brief(state) is not None:
+                    print(
+                        dumps({"phase": "discovery", "roadmap": None, "next": next_action(state)})
+                    )
+                    return 0
                 print(
                     dumps(
                         {
@@ -139,6 +168,7 @@ def main(argv: list[str] | None = None) -> int:
                     print(dumps(store.export()))
             elif args.command == "doctor":
                 Graph(state.domains)
+                validate_artifacts(store)
                 # Replay all evidence to verify the derived state was not silently altered.
                 replay = state.model_copy(deep=True)
                 replay.knowledge, replay.evidence, replay.history, replay.session = {}, [], [], {}
@@ -148,7 +178,15 @@ def main(argv: list[str] | None = None) -> int:
                     raise ValueError("knowledge snapshot differs from evidence replay")
                 print("OK: schema, domains, dependencies, evidence and derived knowledge.")
         return 0
-    except (OSError, ValueError, ValidationError, KeyError, TypeError, YAMLError) as exc:
+    except (
+        OSError,
+        ValueError,
+        ValidationError,
+        KeyError,
+        TypeError,
+        SyntaxError,
+        YAMLError,
+    ) as exc:
         print(f"ailearn: {exc}", file=sys.stderr)
         return 2
 

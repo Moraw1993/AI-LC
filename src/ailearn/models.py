@@ -74,6 +74,74 @@ class Config(Model):
     preferences: list[str] = Field(default_factory=list)
 
 
+class LearningProfile(Model):
+    """Explicit decisions collected by Master, never inferred by initialization."""
+
+    learner: str = Field(min_length=1)
+    goal: str = Field(min_length=1)
+    domain: str = Field(min_length=1)
+    target: Literal["beginner", "mid", "advanced"]
+    target_description: str = Field(min_length=1)
+    depth: Literal["minimal", "standard", "comprehensive"]
+    workspace_name: str = Field(pattern=r"^[a-z0-9][a-z0-9-]{0,63}$")
+    agent_name: str = Field(min_length=1, max_length=100)
+    language: str = Field(min_length=1)
+    working_style: list[str] = Field(min_length=1)
+    prior_knowledge: str = Field(min_length=1)
+    diagnostic_competencies: list[str] = Field(min_length=1)
+
+    @field_validator("workspace_name")
+    @classmethod
+    def portable_name(cls, value: str) -> str:
+        if value.upper() in {
+            "CON",
+            "PRN",
+            "AUX",
+            "NUL",
+            *[f"COM{i}" for i in range(1, 10)],
+            *[f"LPT{i}" for i in range(1, 10)],
+        }:
+            raise ValueError("workspace name is reserved on Windows")
+        return value
+
+
+class Baseline(Model):
+    summary: str = Field(min_length=1)
+    evidence_ids: list[str] = Field(min_length=1)
+
+
+class Intake(Model):
+    profile: LearningProfile
+    baseline: Baseline | None = None
+
+
+class Bootstrap(Model):
+    schema_version: Literal[1] = 1
+    phase: Literal["intent-discovery"] = "intent-discovery"
+    active_workspace: str | None = None
+
+
+class Exercise(Model):
+    lesson: int = Field(ge=1, le=999)
+    topic: int = Field(ge=1, le=999)
+    attempt: int = Field(ge=1, le=999)
+    competency: str
+    kind: Literal["diagnostic", "practice", "assessment"] = "practice"
+    instructions: str = Field(min_length=1, max_length=3000)
+    source: str = Field(min_length=1, max_length=12000)
+
+
+class ExerciseArtifact(Model):
+    id: str
+    lesson: int
+    topic: int
+    attempt: int
+    competency: str
+    kind: Literal["diagnostic", "practice", "assessment"]
+    path: str
+    timestamp: AwareDatetime = Field(default_factory=now)
+
+
 class SensorResult(Model):
     name: str
     passed: bool
@@ -146,3 +214,5 @@ class Snapshot(Model):
     evidence: list[Evidence] = Field(default_factory=list)
     history: list[dict] = Field(default_factory=list)
     session: dict = Field(default_factory=dict)
+    intake: Intake | None = None
+    exercises: list[ExerciseArtifact] = Field(default_factory=list)
