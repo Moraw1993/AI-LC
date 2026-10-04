@@ -56,6 +56,38 @@ def mastered(state: Snapshot, key: str) -> bool:
     )
 
 
+def _review_progress(state: Snapshot, key: str, threshold: int) -> tuple[int, datetime | None]:
+    """Rebuild review streak from current evidence and mastery reset boundaries."""
+    prefix = Snapshot(config=state.config, domains=state.domains)
+    prefix.knowledge[key] = Knowledge()
+    review_step = 0
+    last_review = None
+    for evidence in active_evidence(state):
+        if evidence.competency != key:
+            continue
+        was_mastered = mastered(prefix, key)
+        prefix.evidence.append(evidence.model_copy(update={"supersedes_id": None}))
+        if evidence.kind not in NON_EVIDENCE:
+            misconceptions: set[str] = set()
+            for item in prefix.evidence:
+                if item.competency != key or item.kind in NON_EVIDENCE:
+                    continue
+                misconceptions.update(item.misconceptions)
+                if qualifies(item, threshold):
+                    misconceptions.difference_update(item.resolves)
+            prefix.knowledge[key].misconceptions = sorted(misconceptions)
+        is_mastered = mastered(prefix, key)
+        good = qualifies(evidence, threshold)
+        if evidence.kind == "delayed-retrieval":
+            review_step = min(review_step + 1, len(INTERVALS) - 1) if good else 0
+            last_review = evidence.timestamp
+        elif evidence.independent and not good and last_review is not None:
+            review_step = 0
+        elif good and is_mastered and not was_mastered:
+            review_step = 0
+    return review_step, last_review
+
+
 def record(
     state: Snapshot,
     evidence: Evidence,
@@ -175,15 +207,7 @@ def record(
         else:
             k.stage = Stage.PRACTICED if evidence.independent else Stage.GUIDED
         if evidence.kind == "delayed-retrieval":
-            review_step = 0
-            last_review = None
-            for review in active_evidence(state):
-                if review.competency != key or review.kind != "delayed-retrieval":
-                    continue
-                review_step = (
-                    min(review_step + 1, len(INTERVALS) - 1) if qualifies(review, threshold) else 0
-                )
-                last_review = review.timestamp
+            review_step, last_review = _review_progress(state, key, threshold)
             k.review_step = review_step
             k.last_review = last_review
             k.review_due = last_review + timedelta(days=INTERVALS[review_step])

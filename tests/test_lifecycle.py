@@ -147,6 +147,43 @@ def test_replacement_cannot_change_evidence_kind(state):
         record(state, changed_kind, replace_id=original.id)
 
 
+def test_review_streak_restarts_after_core_failure_and_repair(state):
+    start = now() - timedelta(days=100)
+    demonstrate(state, "statistics.mean", at=start)
+    due = state.knowledge["statistics.mean"].review_due
+    for attempt in ["review-a", "review-b"]:
+        review = evidence(
+            dimension=Dimension.RETENTION,
+            attempt=attempt,
+            kind="delayed-retrieval",
+            timestamp=due,
+        )
+        record(state, review, at=due)
+        due = state.knowledge["statistics.mean"].review_due
+    assert state.knowledge["statistics.mean"].review_step == 2
+    failed_at = due + timedelta(seconds=1)
+    failure = evidence(attempt="regression", timestamp=failed_at)
+    failure.score = 0
+    record(state, failure, at=failed_at)
+    for index in [1, 2]:
+        repaired_at = failed_at + timedelta(seconds=index + 1)
+        record(
+            state,
+            evidence(attempt=f"repair-{index}", timestamp=repaired_at),
+            at=repaired_at,
+        )
+    assert mastered(state, "statistics.mean")
+    next_review = state.knowledge["statistics.mean"].review_due
+    retrieval = evidence(
+        dimension=Dimension.RETENTION,
+        attempt="review-after-repair",
+        kind="delayed-retrieval",
+        timestamp=next_review,
+    )
+    record(state, retrieval, at=next_review)
+    assert state.knowledge["statistics.mean"].review_step == 1
+
+
 def test_duplicate_future_and_sensor_failure(state):
     e = evidence()
     record(state, e)
