@@ -1,0 +1,93 @@
+name: native-release
+on:
+  push:
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            asset: ailearn-windows-x64.exe
+          - os: ubuntu-22.04
+            asset: ailearn-linux-x64
+          - os: ubuntu-24.04-arm
+            asset: ailearn-linux-arm64
+          - os: macos-15-intel
+            asset: ailearn-macos-x64
+          - os: macos-15
+            asset: ailearn-macos-arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - run: uv sync --locked
+      - name: Validate release tag
+        if: startsWith(github.ref, 'refs/tags/')
+        shell: bash
+        run: |
+          test "$GITHUB_REF_NAME" = "v$(uv run python -c 'from ailearn import __version__; print(__version__)')"
+      - run: uv run python scripts/build_native.py
+      - name: Smoke test bundled onboarding
+        shell: bash
+        run: |
+          ./dist/${{ matrix.asset }} --workspace .test-tmp-native config --harness codex
+          ./dist/${{ matrix.asset }} --workspace .test-tmp-native doctor
+          ./dist/${{ matrix.asset }} --workspace .test-tmp-native config --harness codex
+      - name: Test Windows installer
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $version = 'v' + (uv run python -c 'from ailearn import __version__; print(__version__)')
+          ./scripts/install.ps1 -Version $version -ReleaseDirectory dist -InstallRoot "$PWD/.test-tmp-user-install" -NoModifyPath
+          & "$PWD/.test-tmp-user-install/bin/ailearn.cmd" --version
+          if ($LASTEXITCODE -ne 0) { throw 'Installed command failed' }
+          ./scripts/install.ps1 -Version $version -ReleaseDirectory dist -InstallRoot "$PWD/.test-tmp-user-install" -NoModifyPath
+      - name: Test Unix installer
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          export VERSION="v$(uv run python -c 'from ailearn import __version__; print(__version__)')"
+          export RELEASE_DIRECTORY="$PWD/dist"
+          export AILEARN_INSTALL_ROOT="$PWD/.test-tmp-user-install"
+          export AILEARN_BIN_DIR="$PWD/.test-tmp-user-bin"
+          sh scripts/install.sh
+          "$AILEARN_BIN_DIR/ailearn" --version
+          sh scripts/install.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.asset }}
+          path: |
+            dist/${{ matrix.asset }}
+            dist/${{ matrix.asset }}.sha256
+          if-no-files-found: error
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify tag belongs to main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor HEAD origin/main
+          test "$(git cat-file -t "$GITHUB_REF_NAME")" = tag
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/* scripts/install.ps1 scripts/install.sh --verify-tag --generate-notes
