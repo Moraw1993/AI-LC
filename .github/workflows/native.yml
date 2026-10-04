@@ -4,8 +4,15 @@ on:
     tags: ['v*']
   pull_request:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing annotated main release tag to publish or retry'
+        required: false
+        type: string
 permissions:
   contents: read
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
 jobs:
   native:
     strategy:
@@ -25,15 +32,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.12'
       - run: uv sync --locked
       - name: Validate release tag
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release_tag != ''
         shell: bash
         run: |
-          test "$GITHUB_REF_NAME" = "v$(uv run python -c 'from ailearn import __version__; print(__version__)')"
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          test "$RELEASE_TAG" = "v$(uv run python -c 'from ailearn import __version__; print(__version__)')"
       - run: uv run python scripts/build_native.py
       - name: Smoke test bundled onboarding
         shell: bash
@@ -69,7 +79,7 @@ jobs:
             dist/${{ matrix.asset }}.sha256
           if-no-files-found: error
   publish:
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag != ''
     needs: native
     runs-on: ubuntu-latest
     permissions:
@@ -78,11 +88,15 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ inputs.release_tag || github.ref }}
       - name: Verify tag belongs to main
         run: |
-          git fetch origin main
+          # checkout can project a tag name directly onto its commit; fetch the
+          # remote annotated object into a separate ref before checking its type.
+          git fetch origin '+refs/heads/main:refs/remotes/origin/main' "refs/tags/$RELEASE_TAG:refs/ai-lc/release-tag"
+          test "$(git cat-file -t refs/ai-lc/release-tag)" = tag
+          test "$(git rev-parse 'refs/ai-lc/release-tag^{}')" = "$(git rev-parse HEAD)"
           git merge-base --is-ancestor HEAD origin/main
-          test "$(git cat-file -t "$GITHUB_REF_NAME")" = tag
       - uses: actions/download-artifact@v4
         with:
           path: dist
@@ -90,4 +104,4 @@ jobs:
       - name: Publish release assets
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* scripts/install.ps1 scripts/install.sh --verify-tag --generate-notes
+        run: gh release create "$RELEASE_TAG" dist/* scripts/install.ps1 scripts/install.sh --verify-tag --generate-notes
