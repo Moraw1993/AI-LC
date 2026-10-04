@@ -121,6 +121,30 @@ def test_retention_delay_and_intervals(state):
     corrected.timestamp = failed.timestamp + timedelta(seconds=1)
     record(state, corrected, at=corrected.timestamp, replace_id=failed.id)
     assert mastered(state, "statistics.mean")
+    step = state.knowledge["statistics.mean"].review_step
+    corrected_again = evidence(
+        dimension=Dimension.RETENTION,
+        attempt="failed",
+        kind="delayed-retrieval",
+    )
+    corrected_again.id = "corrected-review-again"
+    corrected_again.timestamp = corrected.timestamp + timedelta(seconds=1)
+    record(
+        state,
+        corrected_again,
+        at=corrected_again.timestamp,
+        replace_id=corrected.id,
+    )
+    assert state.knowledge["statistics.mean"].review_step == step
+
+
+def test_replacement_cannot_change_evidence_kind(state):
+    original = evidence(attempt="a")
+    record(state, original)
+    changed_kind = evidence(attempt="a", kind="explanation")
+    changed_kind.id = "changed-kind"
+    with pytest.raises(ValueError, match="same evidence kind"):
+        record(state, changed_kind, replace_id=original.id)
 
 
 def test_duplicate_future_and_sensor_failure(state):

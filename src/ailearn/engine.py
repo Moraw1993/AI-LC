@@ -124,6 +124,8 @@ def record(
             evidence.competency,
         ):
             raise ValueError("replacement must keep the same attempt, dimension and competency")
+        if previous.kind != evidence.kind:
+            raise ValueError("replacement must keep the same evidence kind")
     key = evidence.competency
     k = state.knowledge.get(key, Knowledge())
     threshold = graph.nodes[key].threshold
@@ -173,9 +175,18 @@ def record(
         else:
             k.stage = Stage.PRACTICED if evidence.independent else Stage.GUIDED
         if evidence.kind == "delayed-retrieval":
-            k.review_step = min(k.review_step + 1, len(INTERVALS) - 1) if good else 0
-            k.last_review = evidence.timestamp
-            k.review_due = evidence.timestamp + timedelta(days=INTERVALS[k.review_step])
+            review_step = 0
+            last_review = None
+            for review in active_evidence(state):
+                if review.competency != key or review.kind != "delayed-retrieval":
+                    continue
+                review_step = (
+                    min(review_step + 1, len(INTERVALS) - 1) if qualifies(review, threshold) else 0
+                )
+                last_review = review.timestamp
+            k.review_step = review_step
+            k.last_review = last_review
+            k.review_due = last_review + timedelta(days=INTERVALS[review_step])
         elif good and mastered(state, key) and not was_mastered:
             k.review_step = 0
             k.review_due = evidence.timestamp + timedelta(days=1)
