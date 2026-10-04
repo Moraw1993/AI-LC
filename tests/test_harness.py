@@ -1,5 +1,7 @@
 """Harness configuration must preserve user policy and learner state."""
 
+import tomllib
+
 import pytest
 
 from ailearn.cli import main
@@ -19,6 +21,11 @@ def test_neutral_codex_config_preserves_user_files(tmp_path):
     assert (tmp_path / "AGENTS.md").read_text() == "User instructions"
     assert (codex / "config.toml").read_text() == 'sandbox_mode = "read-only"'
     assert (tmp_path / ".agents/skills/ai-lc-master/SKILL.md").is_file()
+    assessor = tomllib.loads((codex / "agents/assessor.toml").read_text("utf-8"))
+    assert assessor["name"] == "assessor"
+    assert assessor["model_reasoning_effort"] == "low"
+    assert "formal checkpoints" in assessor["description"]
+    assert "ordinary lesson" in assessor["developer_instructions"]
 
 
 def test_conflicting_rules_fail_before_bootstrap(tmp_path):
@@ -28,6 +35,16 @@ def test_conflicting_rules_fail_before_bootstrap(tmp_path):
     with pytest.raises(ValueError, match="preserved"):
         configure_codex(tmp_path)
     assert rules.read_text() == "User policy"
+    assert not (tmp_path / ".ai-learning").exists()
+
+
+def test_conflicting_assessor_is_preserved_and_fails_before_bootstrap(tmp_path):
+    assessor = tmp_path / ".codex/agents/assessor.toml"
+    assessor.parent.mkdir(parents=True)
+    assessor.write_text('name = "assessor"\n# Learner-owned configuration\n', "utf-8")
+    with pytest.raises(ValueError, match="existing Codex agent differs; preserved"):
+        configure_codex(tmp_path)
+    assert "Learner-owned" in assessor.read_text("utf-8")
     assert not (tmp_path / ".ai-learning").exists()
 
 

@@ -48,11 +48,18 @@ session/plan briefs route to diagnosis regardless of requested learning scope. C
 design then resolves target closure. Learning routes missing dimensions to practice
 or remediation. Consolidation prioritizes delayed reviews and application selects unseen
 transfer tasks. The external Master role invokes specialist instructions for each brief.
-The session brief and its phase are persisted as an audit event.
+Ordinary lesson checks are formative and stay with Teacher in the active conversation;
+they do not create Evidence. Briefs mark whether a task is formative or a formal assessment
+checkpoint, and only the latter route to an independent Assessor. Codex setup installs its
+named Assessor profile for these checkpoints; other harnesses use their own isolated-call
+mechanism. The session brief and its phase are persisted as an audit event.
 
 Each competency has seven dimensions and a 0–4 threshold. Core dimensions depend on depth.
 Two distinct qualifying attempts are necessary per dimension. Independent failure clears
-previous success for that dimension, while hints do not establish mastery. Explanation and
+previous success for that dimension, while hints do not establish mastery. Evidence IDs are
+immutable; an explicit `record --replace OLD_ID` appends a correction linked by `supersedes_id`.
+Only the active judgment contributes to gates while all revisions remain replayable audit data.
+Completed baseline evidence cannot be revised. Explanation and
 self-report evidence never passes. Active misconceptions block progression until a new
 qualifying result explicitly resolves them. Transfer and retention gates lead to
 TRANSFERABLE and RETAINED only after core evidence. Evidence carries assessor identity,

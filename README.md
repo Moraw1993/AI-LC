@@ -61,8 +61,9 @@ The neutral hub contains `.ai-learning/bootstrap.json`, six role instructions, s
 policy, `.ai-learning/commands/ailearn.py` and six discoverable skills under `.agents/skills`.
 Codex discovers skills from
 that directory; see [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
-AI-LC supplies logical roles and skills, not a native Codex agent registration or model
-runtime. The tutor's chosen name lives in the agreed profile.
+AI-LC defines provider-independent logical roles and skills. Codex setup also installs a
+named Assessor profile for formal checkpoints; it does not install a model runtime. The
+tutor's chosen name lives in the agreed profile.
 
 Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
 `ailearn configure profile.json [--packs packs]`, creating
@@ -84,11 +85,13 @@ packs fails safely. Use a new workspace name for a different course.
 
 Release commands use the current directory. From elsewhere use
 `ailearn --workspace /absolute/path/to/learning COMMAND` (before the command).
-`config --harness codex` installs native skills and a separate `.codex/rules/ai-lc.rules`
-file allowing deterministic read commands. Existing Codex config, sandbox settings,
-other permission rules and root AGENTS.md are preserved. No hooks, credentials or
-provider configuration are installed. Permission rules do not grant filesystem access.
-The configuration is repeatable and does not select a learning topic.
+`config --harness codex` installs native skills, a named `.codex/agents/assessor.toml`
+for completed formal assessment checkpoints, and a separate `.codex/rules/ai-lc.rules`
+file allowing deterministic read commands. The Assessor profile defaults to low reasoning
+and is not used for ordinary lesson replies. Existing Codex config, sandbox settings,
+other permission rules and root AGENTS.md are preserved. No hooks, credentials or provider
+configuration are installed. Permission rules do not grant filesystem access. The
+configuration is repeatable and does not select a learning topic.
 
 Hub commands route to its active course; `status` includes that course's path. After failure,
 the next task becomes remediation. After sufficient independent evidence, the roadmap
@@ -97,7 +100,13 @@ advances. Due reviews preempt new material; transfer tasks follow the core gates
 ## Agent interaction and an example session
 
 The Learning Conductor reads the task brief and delegates to Curriculum Architect,
-Teacher, Lab Coach, Assessor or Research & Data. Assessor receives limited teaching context.
+Teacher, Lab Coach, Assessor or Research & Data. Ordinary questions during a lesson are
+formative: Teacher responds in the same conversation and does not spawn Assessor or record
+Evidence. Assessor is invoked only after a learner completes a formal checkpoint listed
+in the brief, such as a diagnosis, evidence-bearing attempt, project/transfer check, exam
+or due retention review. The `practice` scope in a generated brief is an independent,
+evidence-bearing attempt; casual practice and checks during `learn`, `deep-learn` or
+`remediate` stay formative. Assessor receives limited teaching context.
 The learner attempts first; hints progress from conceptual direction to a full solution.
 The actual hint level is recorded, and hinted attempts cannot pass mastery gates.
 
@@ -169,7 +178,7 @@ Run these through `ailearn COMMAND`. Installed skills use the same executable.
 | `status` | Show dimension levels, stages, misconceptions and next action |
 | `plan` | Recompute target dependency closure and readiness |
 | `session --scope SCOPE` | Save a task brief for the harness |
-| `record FILE --sensors FILE` | Validate evidence; optionally run fresh deterministic checks |
+| `record FILE --sensors FILE --replace EVIDENCE_ID` | Validate evidence and optionally revise a prior judgment for the same attempt/dimension |
 | `doctor` | Validate schema, DAG and evidence replay |
 | `history` | Read session and evidence audit events |
 | `export --evidence-jsonl` | Print full portable state or evidence lines |
@@ -203,6 +212,11 @@ confidence ≥ 0.8, independence, no hints and no failing sensors or active misc
 Failed independent evidence resets accumulated success in that dimension; failed delayed
 retrieval invalidates all prior dimension passes and routes back to remediation. An explanation
 or self-report can mark exposure but never mastery.
+
+Evidence IDs are immutable. If an assessor corrects a judgment, submit a new evidence JSON
+with a new ID and run `ailearn record corrected.json --replace OLD_EVIDENCE_ID`. The old
+record remains in the audit history, while progression uses the corrected result. Ordinary
+duplicate submissions remain rejected; a completed baseline cannot be revised this way.
 
 Transfer and retention evidence require core mastery first. Reviews start after the core
 gate and are rescheduled after renewed mastery following failure. Dimension levels display
