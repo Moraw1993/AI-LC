@@ -2,6 +2,7 @@ import json
 from datetime import timedelta
 
 import pytest
+from yaml import YAMLError
 
 from ailearn.cli import main
 from ailearn.data import Dataset, Registry, Requirements
@@ -154,8 +155,9 @@ def test_safe_init_persistence_lock_and_corruption(tmp_path, state):
 
 def test_cli_workflow(tmp_path, capsys):
     prefix = ["--workspace", str(tmp_path)]
-    assert main(prefix + ["init", "--domain", "time-series", "--depth", "minimal"]) == 0
-    assert main(prefix + ["init", "--domain", "time-series", "--depth", "minimal"]) == 0
+    Store(tmp_path).init(Config(domain="time-series", depth="minimal"), load_domains())
+    assert main(prefix + ["init"]) == 0
+    assert main(prefix + ["init"]) == 0
     for command in ["status", "plan", "session", "history", "doctor", "export", "domains"]:
         assert main(prefix + [command]) == 0
     efile = tmp_path / "result.json"
@@ -168,7 +170,7 @@ def test_cli_workflow(tmp_path, capsys):
 
 def test_explore_no_mastery(tmp_path):
     prefix = ["--workspace", str(tmp_path)]
-    main(prefix + ["init"])
+    Store(tmp_path).init(Config(domain="statistics"), load_domains())
     main(prefix + ["session", "--scope", "explore"])
     artifact = tmp_path / "e.json"
     artifact.write_text(evidence().model_dump_json(), "utf-8")
@@ -300,12 +302,13 @@ def test_uninitialized_and_invalid_custom_packs(tmp_path):
     with pytest.raises(ValueError, match="no .yml"):
         load_domains(tmp_path)
     (tmp_path / "broken.yml").write_text("not: [valid", "utf-8")
-    assert main(["--workspace", str(tmp_path), "init", "--packs", str(tmp_path)]) == 2
+    with pytest.raises(YAMLError):
+        load_domains(tmp_path)
 
 
 def test_cli_sensor_record_and_portable_export(tmp_path, capsys):
     prefix = ["--workspace", str(tmp_path)]
-    main(prefix + ["init"])
+    Store(tmp_path).init(Config(domain="statistics"), load_domains())
     efile = tmp_path / "result.json"
     efile.write_text(evidence().model_dump_json(), "utf-8")
     sensor = tmp_path / "sensors.json"
