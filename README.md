@@ -26,7 +26,8 @@ Linux/macOS (curl and a SHA256 utility are required):
 curl -fsSL https://github.com/Moraw1993/AI-LC/releases/latest/download/install.sh | sh
 ```
 
-Windows adds `%LOCALAPPDATA%/AI-LC/bin` to User PATH; open a new terminal afterwards.
+Windows puts `%LOCALAPPDATA%/AI-LC/bin` first in User PATH so it precedes older
+user-installed commands. Open a new terminal and restart Codex afterwards.
 Linux/macOS defaults to `~/.local/bin`; add it to PATH if needed. Downloads are checked
 against the release SHA256 files before execution. Checksums detect corruption; they do
 not replace trust in the release publisher. Windows x64, Linux x64/arm64 and macOS
