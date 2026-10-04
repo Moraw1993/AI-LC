@@ -320,3 +320,15 @@ def test_profile_or_baseline_corruption_fails_clearly(course):
     (course.root / "state.json").write_text(json.dumps(value), "utf-8")
     with pytest.raises(ValueError, match="configuration"):
         course.load()
+
+
+def test_missing_active_snapshot_is_corruption_not_neutral_onboarding(course, capsys):
+    hub = Store(course.workspace.parent.parent)
+    (course.root / "state.json").unlink()
+    with pytest.raises(ValueError, match="snapshot is missing"):
+        hub.active()
+    for command in ["status", "plan", "session", "doctor"]:
+        assert main(["--workspace", str(hub.workspace), command]) == 2
+        output = capsys.readouterr()
+        assert "snapshot is missing" in output.err
+        assert "intent-discovery" not in output.out

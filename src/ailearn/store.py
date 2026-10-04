@@ -68,7 +68,11 @@ class Store:
         destination = (self.workspace / bootstrap.active_workspace).resolve()
         if not destination.is_relative_to(self.workspace) or destination == self.workspace:
             raise ValueError("active workspace must remain inside the learning hub")
-        return Store(destination)
+        course = Store(destination)
+        if not (course.root / "state.json").is_file():
+            raise ValueError("active course snapshot is missing; preserve files and restore a backup")
+        course.load()  # An active course cannot silently turn back into neutral onboarding.
+        return course
 
     def _install_skills(self) -> None:
         resources = files("ailearn").joinpath("resources/skills")
