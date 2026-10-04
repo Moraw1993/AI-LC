@@ -16,10 +16,10 @@ built-in packs or other custom packs loaded together. Duplicate packs or compete
 cannot override built-ins. Missing dependencies and cycles are errors.
 
 ```sh
-# The project installer initializes a neutral hub.
+# ailearn config --harness codex initializes a neutral hub.
 # Master agrees an optimization profile after discussing the learner's goal.
-python .ai-learning/commands/ailearn.py schema Domain
-python .ai-learning/commands/ailearn.py configure profile.json --packs ./my-packs
+ailearn schema Domain
+ailearn configure profile.json --packs ./my-packs
 ```
 
 The subject is not selected at init. Master and Curriculum Architect can author a pack
