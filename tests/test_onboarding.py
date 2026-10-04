@@ -60,6 +60,12 @@ def course(tmp_path):
     return hub.configure(profile(), load_domains())
 
 
+def test_baseline_diagnostic_is_a_formal_checkpoint(course):
+    brief = next_action(course.load())
+    assert brief["assessment_checkpoint"] == "formal"
+    assert "assessor" in brief["roles"]
+
+
 def finish_baseline(course):
     with course.transaction() as state:
         record(state, result())

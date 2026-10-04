@@ -19,9 +19,15 @@ Recommended setup installs runtime, skills and helpers inside the project using 
 Role instructions invoke `ailearn COMMAND`; schema contracts
 are read with `schema MODEL`. Codex needs no uv, globally installed executable or environment
 activation. The course launcher uses the parent hub's runtime and binds its own workspace.
-A harness may use separate model calls or isolated subagents. Logical isolation is required
-for assessment: pass the learner response, task, rubric, hint log and sensor outputs, not
-the Teacher's confidence that the learner understands.
+A harness may use separate model calls or isolated subagents. Ordinary lesson turns and
+checks are formative: Teacher responds in the active conversation, adapts the lesson, and
+does not emit Evidence or invoke Assessor. The Assessor is reserved for completed formal
+checkpoints named in the current brief: baseline diagnostics, evidence-bearing attempts,
+project/transfer checks, exams and due retention reviews. For those, pass only the learner
+response/artifact, task, rubric, hint log and sensor outputs, not the Teacher's confidence
+or coaching assumptions. Codex setup installs a narrow named Assessor subagent with low
+reasoning effort; other harnesses keep the same logical role and independent-evidence
+contract using their native delegation mechanism.
 
 Teacher progression: problem → motivation → intuition → tiny example → visualization →
 notation with explained symbols → derivation/manual calculation → implementation →
