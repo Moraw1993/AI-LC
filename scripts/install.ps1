@@ -60,7 +60,7 @@ try {
     [IO.File]::WriteAllText($pending, $shimText, [Text.Encoding]::ASCII)
     Move-Item -LiteralPath $pending -Destination $shim -Force
     if (-not $NoModifyPath) {
-        $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+        $userPath = [string][Environment]::GetEnvironmentVariable('Path', 'User')
         if ($bin -notin ($userPath -split ';')) {
             [Environment]::SetEnvironmentVariable('Path', (($userPath.TrimEnd(';') + ';' + $bin).TrimStart(';')), 'User')
         }

@@ -157,7 +157,7 @@ the CLI also checks registered files exist. Preserve other referenced artifacts 
 ## CLI
 
 Run these through `ailearn COMMAND`. Installed skills
-use this same local entry point; no global executable or imports from another environment.
+use this installed ailearn command or imports from another environment.
 
 | Command | Purpose |
 | --- | --- |
