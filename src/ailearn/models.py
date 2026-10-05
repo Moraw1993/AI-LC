@@ -115,6 +115,24 @@ class PlanPhase(StrEnum):
     ADAPTIVE = "adaptive"
 
 
+class LearningPathVariant(StrEnum):
+    FOCUSED = "focused"
+    BALANCED = "balanced"
+    PROJECT_LED = "project-led"
+
+
+class LearningPathProfile(Model):
+    """Versioned built-in priorities for eligible learning activities."""
+
+    schema_version: Literal[1] = 1
+    variant: LearningPathVariant
+
+
+def balanced_learning_path_profile() -> LearningPathProfile:
+    """Provide the compatibility default for courses created before profiles."""
+    return LearningPathProfile(variant=LearningPathVariant.BALANCED)
+
+
 class PlanStage(Model):
     title: str = Field(min_length=1)
     outcomes: list[str] = Field(min_length=1)
@@ -128,6 +146,7 @@ class CoursePlanProposal(Model):
     target: str = Field(min_length=1)
     target_description: str = Field(min_length=1)
     depth: Literal["minimal", "standard", "comprehensive"]
+    learning_path_profile: LearningPathProfile
     title: str = Field(min_length=1)
     summary: str = Field(min_length=1)
     stages: list[PlanStage] = Field(min_length=1)
@@ -137,6 +156,10 @@ class CoursePlanProposal(Model):
 
 
 class CoursePlan(CoursePlanProposal):
+    # Older snapshots without a selected variant retain the pre-profile route.
+    learning_path_profile: LearningPathProfile = Field(
+        default_factory=balanced_learning_path_profile
+    )
     version: int = Field(ge=1)
     status: Literal["proposed", "approved", "superseded"]
     created_at: AwareDatetime = Field(default_factory=now)

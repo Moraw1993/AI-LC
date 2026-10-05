@@ -15,6 +15,8 @@ from ailearn.models import (
     Dimension,
     Evidence,
     Exercise,
+    LearningPathProfile,
+    LearningPathVariant,
     LearningProfile,
     PlanStage,
 )
@@ -85,6 +87,7 @@ def plan_proposal(state, phase, **changes):
             "target": selected.target,
             "target_description": selected.target_description,
             "depth": selected.depth,
+            "learning_path_profile": LearningPathProfile(variant=LearningPathVariant.BALANCED),
             "title": f"{phase.title()} plan",
             "summary": "Learn the target skills and apply them to forecasting.",
             "stages": [
@@ -238,6 +241,123 @@ def test_plan_revision_requires_reapproval_and_is_audited(course):
         assert state.history[-1]["event"] == "plan.approved"
 
 
+def test_adaptive_plan_cannot_change_learner_approved_path(course):
+    finish_baseline(course)
+    with course.transaction() as state:
+        changed = plan_proposal(
+            state,
+            "adaptive",
+            learning_path_profile=LearningPathProfile(variant=LearningPathVariant.PROJECT_LED),
+        )
+        with pytest.raises(ValueError, match="keep the learner-approved path profile"):
+            propose_plan(state, changed, revise=True)
+
+
+def test_course_plan_profile_is_versioned_and_legacy_plans_default_to_balanced(course):
+    state = course.load()
+    proposal_data = plan_proposal(state, "adaptive").model_dump()
+    proposal_data.pop("learning_path_profile")
+    with pytest.raises(ValueError, match="learning_path_profile"):
+        CoursePlanProposal.model_validate(proposal_data)
+    with pytest.raises(ValueError):
+        LearningPathProfile(schema_version=2, variant="focused")
+
+    snapshot_path = course.root / "state.json"
+    saved = json.loads(snapshot_path.read_text("utf-8"))
+    saved["plans"][0].pop("learning_path_profile")
+    snapshot_path.write_text(json.dumps(saved), "utf-8")
+    loaded = course.load()
+    assert loaded.plans[0].learning_path_profile.variant == LearningPathVariant.BALANCED
+
+
+def test_project_led_prioritizes_eligible_transfer_but_due_reviews_and_remediation_win(
+    tmp_path,
+):
+    hub = Store(tmp_path)
+    hub.bootstrap()
+    course = hub.configure(profile(depth="minimal"), load_test_domains())
+    with course.transaction() as state:
+        overview = propose_plan(
+            state,
+            plan_proposal(
+                state,
+                "overview",
+                learning_path_profile=LearningPathProfile(variant=LearningPathVariant.PROJECT_LED),
+            ),
+        )
+        approve_plan(state, overview.version)
+    with course.transaction() as state:
+        for key, identifier in [
+            ("statistics.mean", "baseline-mean"),
+            ("time_series.autocorrelation", "baseline-acf"),
+        ]:
+            diagnostic = result(key, identifier, score=4)
+            record(state, diagnostic)
+        complete_intake(
+            state,
+            Baseline(
+                summary="Both concepts are familiar",
+                evidence_ids=["baseline-mean", "baseline-acf"],
+            ),
+        )
+        adaptive = propose_plan(
+            state,
+            plan_proposal(
+                state,
+                "adaptive",
+                learning_path_profile=LearningPathProfile(variant=LearningPathVariant.PROJECT_LED),
+            ),
+        )
+        approve_plan(state, adaptive.version)
+
+    with course.transaction() as state:
+        key = roadmap(state)[0]
+        for dimension in [Dimension.CONCEPTUAL, Dimension.INTERPRETATION]:
+            for attempt in ["one", "two"]:
+                record(
+                    state,
+                    Evidence(
+                        id=f"{key}-{dimension.value}-{attempt}",
+                        attempt_id=f"{key}-{attempt}",
+                        competency=key,
+                        dimension=dimension,
+                        score=4,
+                        independent=True,
+                        confidence=0.95,
+                        assessor="independent-assessor",
+                        artifact="answer.md",
+                        kind="assessment",
+                    ),
+                )
+    state = course.load()
+    brief = next_action(state)
+    assert brief["scope"] == "project"
+    assert brief["competency"] == key
+    assert brief["learning_path_profile"]["variant"] == "project-led"
+
+    due = state.knowledge[key].review_due
+    assert next_action(state, at=due)["scope"] == "review"
+
+    with course.transaction() as state:
+        second = roadmap(state)[1]
+        record(
+            state,
+            Evidence(
+                id="second-core-failure",
+                attempt_id="second-core-failure",
+                competency=second,
+                dimension=Dimension.CONCEPTUAL,
+                score=0,
+                independent=True,
+                confidence=0.95,
+                assessor="independent-assessor",
+                artifact="answer.md",
+                kind="assessment",
+            ),
+        )
+    assert next_action(course.load())["scope"] == "remediate"
+
+
 def test_plan_cli_proposes_approves_and_displays_plan(tmp_path, capsys):
     hub = Store(tmp_path)
     hub.bootstrap()
@@ -307,7 +427,15 @@ def finish_baseline(course):
                 evidence_ids=["baseline-mean", "baseline-acf"],
             ),
         )
-        adaptive = propose_plan(state, plan_proposal(state, "adaptive"))
+        selected_path = next(
+            plan.learning_path_profile
+            for plan in reversed(state.plans)
+            if plan.phase == "overview" and plan.status == "approved"
+        )
+        adaptive = propose_plan(
+            state,
+            plan_proposal(state, "adaptive", learning_path_profile=selected_path),
+        )
         approve_plan(state, adaptive.version)
 
 

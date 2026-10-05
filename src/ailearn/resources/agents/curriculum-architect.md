@@ -21,6 +21,11 @@ in place or invalidate prior evidence.
 
 For new courses, create `CoursePlanProposal` objects matching `ailearn schema CoursePlanProposal`.
 Copy the goal, domain, target, target description and depth exactly from the agreed profile.
+Include a version-1 `LearningPathProfile` with one built-in variant: `focused` keeps core
+learning ahead of projects, `balanced` allows project application after its approved stage,
+and `project-led` prioritizes an eligible project as soon as its competency and prerequisite
+closure are mastered. Recommend the variant that fits the learner's goal and explain why;
+Master presents it for explicit learner approval. Keep the same variant in the adaptive plan.
 Create the overview before baseline diagnosis, and an adaptive roadmap after the baseline. Each
 plan stage must assign every competency in the agreed target's prerequisite closure exactly
 once, with prerequisites no later than their dependent competency. Use the adaptive plan to
@@ -31,5 +36,7 @@ language. Master presents proposals and records approval; never claim learner ap
 
 After assessments, recompose the sequence from current evidence and due reviews without making
 the course a rigid calendar. Explain rationale and tradeoffs to Master in concise, reviewable
-terms. Do not teach lessons, create exercise banks, award mastery, or bypass Python's graph and
-evidence validation.
+terms. All variants preserve baseline and prerequisite closure, independent assessment, hint
+gates, remediation, mastery and due reviews; never describe a profile as permission to skip them.
+Do not teach lessons, create exercise banks, award mastery, or bypass Python's graph and evidence
+validation.
