@@ -52,8 +52,9 @@ execution sandbox.
 `init` installs a neutral hub, `$ai-lc-master` and five teaching skills under
 `.agents/skills`; it chooses no subject or level and creates no learner evidence. The
 Master-created LearningProfile stores the tutor display name; that name is not a native
-Codex agent registration. The harness reads role files from the active course and routes
-only work needed by the current brief.
+Codex agent registration. The harness reads shared role files from the learning hub and
+routes only work needed by the current brief. Course-specific instructions or agents can
+be added to a course when its needs justify them.
 
 The baseline is a formal diagnostic checkpoint. After the learner completes each genuine
 unhinted task, an independent Assessor receives only the task, learner response or artifact,

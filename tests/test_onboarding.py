@@ -489,6 +489,11 @@ def test_configuration_preserves_course_and_hub_routing(course):
     hub = Store(course.workspace.parent.parent)
     assert hub.active().workspace == course.workspace
     assert course.load().intake.profile.agent_name == "Ada"
+    assert sorted(path.name for path in course.root.iterdir()) == ["state.json"]
+    assert not (course.workspace / ".agents").exists()
+    assert not (course.workspace / "AGENTS.md").exists()
+    assert (hub.workspace / ".agents/skills/ai-lc-master/SKILL.md").is_file()
+    assert (hub.root / "agents/master.md").is_file()
     before = (course.root / "state.json").read_bytes()
     assert hub.configure(profile(), load_test_domains()).workspace == course.workspace
     assert (course.root / "state.json").read_bytes() == before

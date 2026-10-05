@@ -153,6 +153,7 @@ class Store:
                 domains,
                 Intake(profile=profile),
                 plan_workflow=True,
+                install_workspace_resources=False,
             )
             bootstrap.active_workspace = destination.relative_to(self.workspace).as_posix()
             self._atomic(self.root / "bootstrap.json", bootstrap.model_dump_json(indent=2))
@@ -236,6 +237,8 @@ class Store:
         domains: list,
         intake: Intake | None = None,
         plan_workflow: bool = False,
+        *,
+        install_workspace_resources: bool = True,
     ) -> bool:
         if self.root.exists():
             state = self.load()
@@ -253,10 +256,12 @@ class Store:
             raise ValueError(f"unknown domain: {config.domain}")
         graph.target_closure(config.domain, config.target)
         self.workspace.mkdir(parents=True, exist_ok=True)
-        self._install_skills()
+        if install_workspace_resources:
+            self._install_skills()
         stage = Path(tempfile.mkdtemp(prefix=".ai-learning-init-", dir=self.workspace))
         try:
-            self._resources(stage)
+            if install_workspace_resources:
+                self._resources(stage)
             state = Snapshot(
                 config=config,
                 domains=domains,
@@ -269,7 +274,8 @@ class Store:
         finally:
             if stage.exists():
                 shutil.rmtree(stage)
-        self._root_instructions()
+        if install_workspace_resources:
+            self._root_instructions()
         return True
 
     def export(self) -> dict:

@@ -5,8 +5,8 @@ description: Diagnose an AI-LC learner's prerequisite knowledge and current abil
 
 # Diagnose before planning
 
-Read `.ai-learning/agents/common.md`, `teacher.md`, and `assessor.md` in the active course.
-Run `ailearn status` and `session` with its workspace path. Read the agreed intake profile,
+Read `.ai-learning/agents/common.md`, `teacher.md`, and `assessor.md` from the learning hub.
+Run `ailearn status` and `session` from the hub. Read the agreed intake profile,
 diagnostic competencies and outcome/rubric definitions. Do not begin diagnosis until the
 overview plan is approved. Do not teach lessons before baseline completion and approval
 of the adaptive plan.
