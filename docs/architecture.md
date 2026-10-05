@@ -39,7 +39,13 @@ use temporary venv/pip to stage `.ai-lc/runtime`, with source/interpreter manife
 Standalone legacy workspaces retain their local `.ai-learning/commands/ailearn.py`
 launcher, which discovers the ancestor runtime. Release usage requires no installed
 Python or uv; development uses uv.
-`schema MODEL` exposes contracts without imports in an unknown interpreter.
+Legacy users substitute that command for `ailearn` when no global command exists.
+`schema MODEL` exposes contracts without imports in an unknown interpreter. The
+version-1 `HarnessManifest` and `HarnessBrief` contracts describe capability declarations
+and a stable envelope shared by onboarding, planning and session briefs. `harness validate`
+checks declared requirements without accessing learner state or running harness tools;
+capability declarations are not proof that work was performed. Current compatibility
+fixtures cover the existing Codex flow only; no second harness adapter is claimed.
 
 `onboarding.py` gates new-course diagnosis on an approved overview and teaching on both
 a Baseline and an approved adaptive plan. Course plans are typed, versioned proposals;

@@ -1,0 +1,58 @@
+{
+  "manifest": {
+    "schema_version": 1,
+    "harness_id": "codex",
+    "capabilities": {
+      "instruction_access": "available",
+      "local_cli": "available",
+      "file_artifacts": "available",
+      "formal_assessment": "available",
+      "media_tools": "unknown",
+      "sandbox_execution": "unknown"
+    }
+  },
+  "briefs": [
+    {
+      "schema_version": 1,
+      "phase": "intent-discovery",
+      "action": "conversation",
+      "roles": ["master"],
+      "instructions": "Discuss the learner's goal.",
+      "skill": "ai-lc-master"
+    },
+    {
+      "schema_version": 1,
+      "phase": "course-planning",
+      "action": "propose-plan",
+      "roles": ["curriculum-architect", "master"],
+      "instructions": "Propose a course plan.",
+      "plan_phase": "overview"
+    },
+    {
+      "schema_version": 1,
+      "phase": "discovery",
+      "action": "diagnostic",
+      "roles": ["teacher", "assessor"],
+      "instructions": "Collect and independently assess a completed response.",
+      "assessment_checkpoint": "formal"
+    },
+    {
+      "schema_version": 1,
+      "phase": "learning",
+      "action": "practice",
+      "roles": ["lab-coach", "assessor"],
+      "instructions": "Generate and assess a fresh practice attempt.",
+      "assessment_checkpoint": "formal",
+      "dimension": "implementation",
+      "scope": "practice"
+    },
+    {
+      "schema_version": 1,
+      "phase": "consolidation",
+      "action": "wait-for-review",
+      "roles": ["master"],
+      "instructions": "Wait until the scheduled review is due.",
+      "scope": "review"
+    }
+  ]
+}

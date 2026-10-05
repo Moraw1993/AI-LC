@@ -206,8 +206,14 @@ Run these through `ailearn COMMAND`. Installed skills use the same executable.
 | `history` | Read session and evidence audit events |
 | `export --evidence-jsonl` | Print full portable state or evidence lines |
 | `sensors FILE` | Run structured checks without executing code |
+| `harness validate MANIFEST BRIEF` | Validate a versioned brief against declared harness capabilities |
 | `sources` | List official dataset entry points |
-| `schema MODEL` | Print LearningProfile, Domain, Baseline, Evidence, Exercise or Snapshot JSON schema |
+| `schema MODEL` | Print LearningProfile, Domain, Baseline, Evidence, Exercise, Snapshot or harness contract JSON schema |
+
+Harness integrations can inspect `ailearn schema HarnessManifest` and `ailearn schema
+HarnessBrief`. Capability manifests are declarations, not proof of tool execution. See
+[the harness contract](docs/harness-contract.md) for required-capability checks and the
+current Codex compatibility fixture; other harnesses are not certified by that contract.
 
 Scopes: learn, deep-learn, review, remediate, practice, assessment, project, explore.
 Explicit scope selection does not bypass prerequisite routing. Explore permits exposure
