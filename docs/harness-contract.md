@@ -42,13 +42,14 @@ requires it. The AI-LC package supplies no execution sandbox and never runs lear
 ## Task brief
 
 Briefs emitted by onboarding, planning and session commands use a version-1 envelope with
-`schema_version`, `phase`, `action`, `roles` and `instructions`. Other AI-LC fields remain
+`schema_version`, `phase`, `action`, a non-empty `roles` list and non-empty `instructions`. Even
+wait-for-review briefs route to Master with an explicit instruction. Other AI-LC fields remain
 available as protocol extensions and must be preserved by harness integrations. See
 `ailearn schema HarnessBrief` for the full typed envelope. The six role identifiers are
 `master`, `curriculum-architect`, `teacher`, `lab-coach`, `assessor` and `research-data`.
 
-The contract validator requires instruction access and the local CLI when a brief has roles
-and instructions. A formal checkpoint must route to `assessor` and requires the declared
+The contract validator requires instruction access and the local CLI for every brief. A
+formal checkpoint must route to `assessor` and requires the declared
 `formal_assessment` capability. An implementation-dimension task requires `file_artifacts`.
 Briefs may list further requirements, such as `media_tools` or `sandbox_execution`. The
 validator fails closed when a required capability is `unknown` or `unavailable`:

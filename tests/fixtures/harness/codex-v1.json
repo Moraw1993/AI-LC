@@ -45,6 +45,14 @@
       "assessment_checkpoint": "formal",
       "dimension": "implementation",
       "scope": "practice"
+    },
+    {
+      "schema_version": 1,
+      "phase": "consolidation",
+      "action": "wait-for-review",
+      "roles": ["master"],
+      "instructions": "Wait until the scheduled review is due.",
+      "scope": "review"
     }
   ]
 }

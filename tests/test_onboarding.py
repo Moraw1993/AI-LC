@@ -20,6 +20,7 @@ from ailearn.models import (
     LearningPathVariant,
     LearningProfile,
     PlanStage,
+    Scope,
 )
 from ailearn.onboarding import (
     approve_plan,
@@ -135,6 +136,9 @@ def test_existing_onboarding_and_session_briefs_follow_harness_contract(course):
     finish_baseline(course)
     session = next_action(course.load())
     validate_delivery(manifest, session)
+    wait = next_action(course.load(), Scope.REVIEW)
+    assert wait["action"] == "wait-for-review"
+    validate_delivery(manifest, wait)
 
 
 def test_baseline_diagnostic_is_a_formal_checkpoint(course):

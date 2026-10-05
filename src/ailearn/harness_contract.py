@@ -11,8 +11,7 @@ from ailearn.models import (
 
 def required_capabilities(brief: HarnessBrief) -> set[HarnessCapability]:
     required = set(brief.required_capabilities)
-    if brief.roles and brief.instructions:
-        required.update({HarnessCapability.INSTRUCTION_ACCESS, HarnessCapability.LOCAL_CLI})
+    required.update({HarnessCapability.INSTRUCTION_ACCESS, HarnessCapability.LOCAL_CLI})
     if brief.assessment_checkpoint == "formal":
         if HarnessRole.ASSESSOR not in brief.roles:
             raise ValueError("formal assessment brief must route to the independent Assessor")

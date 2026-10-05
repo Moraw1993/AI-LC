@@ -84,8 +84,8 @@ class HarnessBrief(Model):
     schema_version: Literal[1]
     phase: str = Field(min_length=1)
     action: str = Field(min_length=1)
-    roles: list[HarnessRole] = Field(default_factory=list)
-    instructions: str = ""
+    roles: list[HarnessRole] = Field(min_length=1)
+    instructions: str = Field(min_length=1)
     assessment_checkpoint: Literal["formal", "formative"] | None = None
     required_capabilities: list[HarnessCapability] = Field(default_factory=list)
 

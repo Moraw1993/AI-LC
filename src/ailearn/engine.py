@@ -380,6 +380,8 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             "action": "wait-for-review",
             "scope": "review",
             "reason": "No delayed retrieval is due yet.",
+            "roles": ["master"],
+            "instructions": "No delayed retrieval is due. Wait until the scheduled review is due.",
         }
     if due:
         key = min(due, key=lambda key: state.knowledge[key].review_due)
@@ -404,6 +406,9 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
                     "phase": "consolidation",
                     "action": "wait-for-review",
                     "reason": "Core and transfer gates passed; retain through delayed retrieval.",
+                    "roles": ["master"],
+                    "instructions": "Core and transfer gates passed. Continue with delayed "
+                    "retrieval when it is due.",
                 }
             selected, dimension = Scope.PROJECT, Dimension.TRANSFER
             reason = "Demonstrate transfer on an unseen problem or dataset."

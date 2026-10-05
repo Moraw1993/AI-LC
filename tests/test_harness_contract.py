@@ -23,7 +23,7 @@ def test_codex_fixture_obeys_versioned_harness_contract():
         assert checked_manifest.harness_id == "codex"
         assert brief.schema_version == 1
         assert brief.model_dump(mode="json")["phase"] == payload["phase"]
-    assert HarnessBrief.model_validate(fixture["briefs"][-1]).dimension == "implementation"
+    assert HarnessBrief.model_validate(fixture["briefs"][3]).dimension == "implementation"
 
 
 def test_cli_validates_manifest_and_brief_without_a_learning_workspace(tmp_path, capsys):
@@ -60,10 +60,21 @@ def test_unknown_capability_does_not_satisfy_a_brief_requirement():
         validate_delivery(fixture["manifest"], brief)
 
 
+def test_actionable_brief_requires_roles_and_instructions():
+    fixture = json.loads(FIXTURE.read_text("utf-8"))
+    incomplete = {"schema_version": 1, "phase": "learning", "action": "practice"}
+    with pytest.raises(ValidationError, match="roles"):
+        validate_delivery(fixture["manifest"], incomplete)
+
+    incomplete["roles"] = ["teacher"]
+    with pytest.raises(ValidationError, match="instructions"):
+        validate_delivery(fixture["manifest"], incomplete)
+
+
 def test_implementation_dimension_requires_file_artifacts():
     fixture = json.loads(FIXTURE.read_text("utf-8"))
     fixture["manifest"]["capabilities"]["file_artifacts"] = "unknown"
-    brief = fixture["briefs"][-1]
+    brief = fixture["briefs"][3]
     with pytest.raises(ValueError, match="file_artifacts"):
         validate_delivery(fixture["manifest"], brief)
 
