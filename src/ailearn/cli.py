@@ -13,6 +13,7 @@ from ailearn.data import SOURCES
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise, validate_artifacts
 from ailearn.graph import Graph, load_domains
+from ailearn.harness_contract import required_capabilities, validate_delivery
 from ailearn.models import (
     Baseline,
     CoursePlanProposal,
@@ -42,6 +43,13 @@ def parser() -> argparse.ArgumentParser:
     commands.add_parser("init", help="Install Master and teaching skills without choosing a topic")
     config = commands.add_parser("config", help="Configure a topic-neutral harness workspace")
     config.add_argument("--harness", required=True, choices=["codex"])
+    harness = commands.add_parser("harness", help="Validate a harness manifest and AI-LC brief")
+    harness_actions = harness.add_subparsers(dest="harness_action", required=True)
+    validate_harness = harness_actions.add_parser(
+        "validate", help="Check brief requirements against declared harness capabilities"
+    )
+    validate_harness.add_argument("manifest", type=Path)
+    validate_harness.add_argument("brief", type=Path)
     configure = commands.add_parser(
         "configure", help="Create a course from Master's agreed profile"
     )
@@ -95,6 +103,8 @@ def parser() -> argparse.ArgumentParser:
             "CoursePlanProposal",
             "CoursePlan",
             "Snapshot",
+            "HarnessManifest",
+            "HarnessBrief",
         ],
     )
     return p
@@ -110,7 +120,15 @@ def main(argv: list[str] | None = None) -> int:
             print("Codex configured. Invoke $ai-lc-master to discuss your learning goal.")
             return 0
         store = Store(args.workspace)
-        if args.command not in {"init", "configure", "domains", "sources", "sensors", "schema"}:
+        if args.command not in {
+            "init",
+            "configure",
+            "domains",
+            "sources",
+            "sensors",
+            "schema",
+            "harness",
+        }:
             store = store.active()
             if not (store.root / "state.json").exists():
                 if args.command in {"status", "plan", "session", "doctor"}:
@@ -128,6 +146,22 @@ def main(argv: list[str] | None = None) -> int:
             )
         elif args.command == "sources":
             print(dumps(SOURCES))
+        elif args.command == "harness":
+            manifest_data = json.loads(args.manifest.read_text("utf-8"))
+            brief_data = json.loads(args.brief.read_text("utf-8"))
+            manifest, brief = validate_delivery(manifest_data, brief_data)
+            print(
+                dumps(
+                    {
+                        "declared_requirements_satisfied": True,
+                        "harness_id": manifest.harness_id,
+                        "brief_schema_version": brief.schema_version,
+                        "required_capabilities": sorted(
+                            capability.value for capability in required_capabilities(brief)
+                        ),
+                    }
+                )
+            )
         elif args.command == "schema":
             print(dumps(getattr(models, args.model).model_json_schema()))
         elif args.command == "init":

@@ -375,6 +375,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
     ]
     if scope == Scope.REVIEW and not due:
         return {
+            "schema_version": 1,
             "phase": "consolidation",
             "action": "wait-for-review",
             "scope": "review",
@@ -399,6 +400,7 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             key = next((key for key in path if not passed(state, key, Dimension.TRANSFER)), None)
             if key is None:
                 return {
+                    "schema_version": 1,
                     "phase": "consolidation",
                     "action": "wait-for-review",
                     "reason": "Core and transfer gates passed; retain through delayed retrieval.",
@@ -474,6 +476,8 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
     }
     selected_roles = roles.get(selected, ["teacher", "lab-coach"])
     return {
+        "schema_version": 1,
+        "action": selected.value,
         "phase": "consolidation"
         if selected == Scope.REVIEW
         else "application"

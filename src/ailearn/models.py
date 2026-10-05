@@ -36,6 +36,60 @@ class Scope(StrEnum):
     EXPLORE = "explore"
 
 
+class HarnessRole(StrEnum):
+    MASTER = "master"
+    CURRICULUM_ARCHITECT = "curriculum-architect"
+    TEACHER = "teacher"
+    LAB_COACH = "lab-coach"
+    ASSESSOR = "assessor"
+    RESEARCH_DATA = "research-data"
+
+
+class HarnessCapabilityState(StrEnum):
+    AVAILABLE = "available"
+    UNAVAILABLE = "unavailable"
+    UNKNOWN = "unknown"
+
+
+class HarnessCapability(StrEnum):
+    INSTRUCTION_ACCESS = "instruction_access"
+    LOCAL_CLI = "local_cli"
+    FILE_ARTIFACTS = "file_artifacts"
+    FORMAL_ASSESSMENT = "formal_assessment"
+    MEDIA_TOOLS = "media_tools"
+    SANDBOX_EXECUTION = "sandbox_execution"
+
+
+class HarnessCapabilities(Model):
+    instruction_access: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+    local_cli: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+    file_artifacts: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+    formal_assessment: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+    media_tools: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+    sandbox_execution: HarnessCapabilityState = HarnessCapabilityState.UNKNOWN
+
+
+class HarnessManifest(Model):
+    """Harness-declared availability; declarations are not execution evidence."""
+
+    schema_version: Literal[1]
+    harness_id: str = Field(pattern=r"^[a-z][a-z0-9._-]*$")
+    capabilities: HarnessCapabilities = Field(default_factory=HarnessCapabilities)
+
+
+class HarnessBrief(Model):
+    """Stable brief envelope; additional AI-LC brief fields are preserved as extensions."""
+
+    model_config = ConfigDict(extra="allow")
+    schema_version: Literal[1]
+    phase: str = Field(min_length=1)
+    action: str = Field(min_length=1)
+    roles: list[HarnessRole] = Field(default_factory=list)
+    instructions: str = ""
+    assessment_checkpoint: Literal["formal", "formative"] | None = None
+    required_capabilities: list[HarnessCapability] = Field(default_factory=list)
+
+
 class Stage(StrEnum):
     UNSEEN = "UNSEEN"
     EXPOSED = "EXPOSED"
