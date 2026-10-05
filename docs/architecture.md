@@ -41,9 +41,13 @@ command exists. Release usage requires no installed Python or uv; development us
 `onboarding.py` gates new-course diagnosis on an approved overview and teaching on both
 a Baseline and an approved adaptive plan. Course plans are typed, versioned proposals;
 their stages cover every competency in the selected target's prerequisite closure exactly
-once. Approval and revision decisions are appended to history. Routine evidence-driven
-next-action changes need no approval. Legacy snapshots default to no plan workflow and
-remain readable. Teacher gathers knowledge and genuine responses; independent Assessor
+once. Each proposal carries a versioned `LearningPathProfile` (`focused`, `balanced`, or
+`project-led`); the learner approves it with the overview, and the adaptive plan must retain
+that selection. The engine may reprioritize eligible project work by approved stage while
+due reviews, remediation, prerequisites, evidence and mastery gates remain authoritative.
+Snapshots predating the profile field read as `balanced`. Approval and revision decisions
+are appended to history. Routine evidence-driven next-action changes need no approval.
+Legacy snapshots default to no plan workflow and remain readable. Teacher gathers knowledge and genuine responses; independent Assessor
 records diagnostic evidence. Diagnostic evidence stays within the agreed competency set.
 Each needs independent, unhinted diagnostic coverage with confidence >= 0.8; an actual
 failed answer qualifies as diagnosis, not mastery. Self-report, exposure and hints cannot

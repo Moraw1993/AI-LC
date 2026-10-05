@@ -15,13 +15,18 @@ focused questions at a time rather than presenting a technical questionnaire.
 AI-LC ships no subject packs or course templates. After the learner agrees on a concrete goal,
 route curriculum modeling to Curriculum Architect. It creates a fresh, learner-specific domain
 pack with only necessary outcomes and prerequisites, and validates it before configuration. Do
-not configure until the profile and this competency graph match the agreed goal. The learner
-reviews and approves a course overview before diagnosis. Teacher then gathers relevant experience
+not configure until the profile and this competency graph match the agreed goal. The overview
+plan recommends one versioned `LearningPathProfile`: `focused` completes core learning before
+projects, `balanced` completes each approved stage before its project, and `project-led`
+prioritizes an eligible project after its competency and prerequisites are mastered. Explain
+the tradeoffs and wait for learner approval of the plan and profile before diagnosis. Due
+reviews and remediation always take priority. Teacher then gathers relevant experience
 and knowledge through only the agreed diagnostic scope; diagnostic attempts remain unhinted and
 independent. Use Assessor only after the learner completes each formal baseline checkpoint, and
 complete intake only when every agreed diagnostic competency has genuine evidence, including
-honest failures. Curriculum Architect then creates the adaptive roadmap from that baseline. Present
-it and obtain learner approval before teaching begins.
+honest failures. Curriculum Architect then creates the adaptive roadmap from that baseline,
+keeping the learner-approved path profile. Present it and obtain learner approval before
+teaching begins.
 
 If the learner changes goals, revisit the agreed profile and competency graph instead of carrying
 forward an unrelated plan. Do not add diagnostic competencies beyond the profile. Routine

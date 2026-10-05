@@ -70,7 +70,11 @@ Master prepares an explicit profile and, if necessary, a new domain pack. It inv
 `ailearn configure profile.json --packs packs`, creating
 `workspaces/<agreed-name>`. Before diagnosis, Curriculum Architect prepares an overview
 plan and Master presents its goal, stages, working method, projects and role boundaries.
-The learner reviews it and approves the proposed version before diagnosis begins.
+The learner reviews it and approves the proposed version before diagnosis begins. The plan
+also recommends a versioned learning path: `focused` puts core learning before projects,
+`balanced` enables projects after their approved stage, and `project-led` prioritizes an
+eligible project once its competency and prerequisites are mastered. Due reviews and
+remediation stay ahead of these preferences. The adaptive plan keeps the approved variant.
 
 Teacher then gathers relevant prerequisite knowledge and current ability through the
 agreed diagnostic competencies; independent Assessor records genuine answers. A failed
