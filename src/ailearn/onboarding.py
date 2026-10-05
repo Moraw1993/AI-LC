@@ -20,6 +20,9 @@ def onboarding_brief() -> dict:
         "action": "conversation",
         "instructions": "Ask what the learner wants to learn and why. Establish the target "
         "ability, prior experience, language, working style, tutor name and workspace name. "
+        "Discuss whether the learner prefers focused core practice, a balanced sequence or "
+        "early project application; the proposed overview plan must recommend one explicit "
+        "built-in path for learner approval. "
         "Do not select a default topic or build a roadmap. Save explicit decisions in a "
         "LearningProfile and use ailearn configure profile.json. "
         "After configure, present and obtain approval for the overview plan before baseline "
@@ -85,7 +88,11 @@ def _plan_gate(state: Snapshot, phase: PlanPhase) -> dict:
         "roles": ["master"] if current else ["curriculum-architect", "master"],
         "instructions": (
             f"Prepare and present the {stage} in the learner's language. Explain its "
-            "goal, stages, working method, projects and role boundaries. Wait for explicit "
+            "goal, stages, working method, projects and role boundaries. Include one built-in "
+            "learning path profile (focused, balanced or project-led) and explain its activity "
+            "priorities. The adaptive plan must keep the learner-approved profile. Profiles "
+            "may reorder eligible activities only; they cannot remove required gates or "
+            "evidence. Wait for explicit "
             "learner approval before continuing. Save proposals with `ailearn plan propose "
             "plan.json`, or revise one with `ailearn plan revise plan.json`; record approval "
             "with `ailearn plan approve VERSION`. Do not diagnose or teach while plan review "
@@ -126,6 +133,14 @@ def validate_course_plans(state: Snapshot) -> None:
 
     graph = Graph(state.domains)
     profile = state.intake.profile
+    approved_overview = next(
+        (
+            plan
+            for plan in reversed(state.plans)
+            if plan.phase == PlanPhase.OVERVIEW and plan.status == "approved"
+        ),
+        None,
+    )
     closure = set(graph.target_closure(profile.domain, profile.target))
     versions: set[int] = set()
     for index, plan in enumerate(state.plans):
@@ -170,6 +185,9 @@ def validate_course_plans(state: Snapshot) -> None:
             raise ValueError("course plan approval timestamp does not match its status")
         if plan.phase == PlanPhase.ADAPTIVE and state.intake.baseline is None:
             raise ValueError("adaptive course plan requires a completed baseline")
+        if plan.phase == PlanPhase.ADAPTIVE and approved_overview is not None:
+            if plan.learning_path_profile != approved_overview.learning_path_profile:
+                raise ValueError("adaptive course plan must keep the learner-approved path profile")
         prior_phase_plan = any(old.phase == plan.phase for old in state.plans[:index])
         expected_event = "plan.revised" if prior_phase_plan else "plan.proposed"
         if not any(
@@ -219,6 +237,19 @@ def propose_plan(
         profile.depth,
     ):
         raise ValueError("course plan scope must match the agreed learning profile")
+    if phase == PlanPhase.ADAPTIVE:
+        overview = next(
+            (
+                plan
+                for plan in reversed(state.plans)
+                if plan.phase == PlanPhase.OVERVIEW and plan.status == "approved"
+            ),
+            None,
+        )
+        if overview is None:
+            raise ValueError("approve the course overview before selecting a learning path")
+        if proposal.learning_path_profile != overview.learning_path_profile:
+            raise ValueError("adaptive course plan must keep the learner-approved path profile")
     closure = set(graph.target_closure(profile.domain, profile.target))
     competencies = [key for stage in proposal.stages for key in stage.competencies]
     if len(competencies) != len(set(competencies)):

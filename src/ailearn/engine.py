@@ -7,6 +7,7 @@ from ailearn.models import (
     Dimension,
     Evidence,
     Knowledge,
+    LearningPathVariant,
     Scope,
     Snapshot,
     Stage,
@@ -281,6 +282,79 @@ def roadmap(state: Snapshot) -> list[str]:
     return graph.target_closure(state.config.domain, state.config.target)
 
 
+def _active_path_variant(state: Snapshot) -> LearningPathVariant:
+    plan = next(
+        (
+            plan
+            for plan in reversed(state.plans)
+            if plan.phase == "adaptive" and plan.status == "approved"
+        ),
+        None,
+    )
+    if plan is None:
+        return LearningPathVariant.BALANCED
+    return plan.learning_path_profile.variant
+
+
+def _needs_remediation(state: Snapshot, key: str, graph: Graph) -> bool:
+    knowledge = state.knowledge.get(key, Knowledge())
+    if knowledge.misconceptions:
+        return True
+    dimension = next((d for d in required(state.config.depth) if not passed(state, key, d)), None)
+    if dimension is None:
+        return False
+    attempts = [
+        e
+        for e in active_evidence(state)
+        if e.competency == key
+        and e.kind not in NON_EVIDENCE
+        and (
+            e.dimension == dimension
+            or (
+                e.kind == "delayed-retrieval"
+                and e.independent
+                and not qualifies(e, graph.nodes[key].threshold)
+            )
+        )
+    ]
+    return bool(
+        attempts
+        and attempts[-1].independent
+        and not qualifies(attempts[-1], graph.nodes[key].threshold)
+    )
+
+
+def _project_candidate(
+    state: Snapshot, path: list[str], graph: Graph, variant: LearningPathVariant
+) -> str | None:
+    if variant == LearningPathVariant.FOCUSED:
+        return None
+    if any(_needs_remediation(state, key, graph) for key in path):
+        return None
+    active_plan = next(
+        (
+            plan
+            for plan in reversed(state.plans)
+            if plan.phase == "adaptive" and plan.status == "approved"
+        ),
+        None,
+    )
+    if variant == LearningPathVariant.BALANCED and active_plan is None:
+        return None
+    for key in path:
+        if passed(state, key, Dimension.TRANSFER) or not mastered(state, key):
+            continue
+        ancestors = graph.closure([key])[:-1]
+        if any(not mastered(state, ancestor) for ancestor in ancestors):
+            continue
+        if variant == LearningPathVariant.BALANCED and active_plan is not None:
+            stage = next((stage for stage in active_plan.stages if key in stage.competencies), None)
+            if stage is not None and any(not mastered(state, item) for item in stage.competencies):
+                continue
+        return key
+    return None
+
+
 def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None = None) -> dict:
     plan_gate = planning_brief(state)
     if plan_gate is not None:
@@ -312,8 +386,16 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
         dimension = Dimension.RETENTION
         reason = "Scheduled delayed retrieval is due. Use a new representation."
     else:
-        key = next((key for key in path if not mastered(state, key)), None)
-        if key is None:
+        variant = _active_path_variant(state)
+        project_key = _project_candidate(state, path, graph, variant)
+        key = project_key or next((key for key in path if not mastered(state, key)), None)
+        if project_key is not None:
+            selected, dimension = Scope.PROJECT, Dimension.TRANSFER
+            reason = (
+                "Path profile prioritizes an eligible project after its core and prerequisites "
+                "passed."
+            )
+        elif key is None:
             key = next((key for key in path if not passed(state, key, Dimension.TRANSFER)), None)
             if key is None:
                 return {
@@ -409,6 +491,34 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             if active_plan and plan_stage
             else None
         ),
+        "learning_path_profile": {
+            "schema_version": 1,
+            "variant": _active_path_variant(state).value,
+        },
+        "activity_priorities": {
+            LearningPathVariant.FOCUSED: [
+                "due-review",
+                "remediation",
+                "core-learning",
+                "project-transfer",
+                "exploration",
+            ],
+            LearningPathVariant.BALANCED: [
+                "due-review",
+                "remediation",
+                "core-learning",
+                "approved-stage-project-transfer",
+                "project-transfer",
+                "exploration",
+            ],
+            LearningPathVariant.PROJECT_LED: [
+                "due-review",
+                "remediation",
+                "project-transfer",
+                "just-in-time-core-learning",
+                "exploration",
+            ],
+        }[_active_path_variant(state)],
         "dimension": dimension.value,
         "scope": selected.value,
         "roles": selected_roles,

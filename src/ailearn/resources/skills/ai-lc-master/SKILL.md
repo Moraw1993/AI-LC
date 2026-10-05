@@ -41,12 +41,16 @@ The command creates `workspaces/<workspace_name>` and activates it; repeating an
 identical profile preserves progress. Never edit state.json manually.
 
 After `configure`, ask Curriculum Architect for an overview `CoursePlanProposal` and
-present its goal, stages, working method, projects and role boundaries. Wait for explicit
-learner approval, then run `ailearn plan approve VERSION`. Only then invoke
+present its goal, stages, working method, projects, role boundaries and recommended
+versioned `LearningPathProfile`. Explain that `focused` completes core learning before
+projects, `balanced` completes each approved stage before its project, and `project-led`
+prioritizes an eligible project after its competency and prerequisites are mastered. Due
+reviews and remediation always take priority. Wait for explicit learner approval of the
+plan and profile, then run `ailearn plan approve VERSION`. Only then invoke
 `$ai-lc-diagnose`; keep diagnosis within the agreed competency list, and use independent
 Assessor after each completed formal diagnostic response. After `complete-intake`, ask
 Curriculum Architect for an adaptive `CoursePlanProposal`, present the personalized route
-and wait for approval before teaching. At each transition, tell the learner the current
+and wait for approval before teaching, keeping the selected path profile unchanged. At each transition, tell the learner the current
 stage, purpose, expected activity and completion condition; close with result and next
 stage. During ordinary lessons, keep formative checks in Teacher's current conversation
 without invoking Assessor or creating Evidence. Formal practice, assessment, project and
