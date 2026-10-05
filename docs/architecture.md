@@ -95,12 +95,16 @@ core evidence. Transfer and retention cannot be submitted before core mastery. P
 reviews of a regressed competency resume only after its core gate has been repaired.
 
 `store.py` writes one authoritative snapshot by temporary-file replacement. State, course
-plans, evidence and history commit together. An exclusive lock serializes CLI writers; a failed transaction
-does not persist partial changes. Init stages the full directory and preserves existing
-AGENTS.md. Exports are read views, not independently authoritative files. There is no
-database or general multi-file commit protocol to reconcile. `doctor` replays evidence and compares
-derived knowledge. For backups, copy state.json while no writer is active; keep learner
-artifacts alongside it.
+plans, evidence and history commit together. An exclusive lock serializes CLI writers; a failed
+transaction does not persist partial changes. Init stages the full directory and preserves
+existing AGENTS.md. New audit events use a version-1 envelope with unique event IDs. They link
+profile and plan versions, approval decisions, compact routing reasons and evidence IDs without
+copying profile text or conversations. Loading validates versioned events while preserving
+unversioned legacy entries unchanged; `history` and exports can read both. `doctor` validates
+event envelopes and replays evidence to compare derived knowledge. Exports are read views, not
+independently authoritative files. There is no database or general multi-file commit protocol
+to reconcile. For backups, copy state.json while no writer is active; keep learner artifacts
+alongside it.
 
 `exercises.py` creates <=80-line Python scaffolds with lesson/topic/attempt numbering,
 validates AST syntax without execution, and registers metadata in the snapshot. Exclusive

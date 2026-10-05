@@ -131,6 +131,7 @@ class Config(Model):
 class LearningProfile(Model):
     """Explicit decisions collected by Master, never inferred by initialization."""
 
+    schema_version: Literal[1] = 1
     learner: str = Field(min_length=1)
     goal: str = Field(min_length=1)
     domain: str = Field(min_length=1)
@@ -185,6 +186,46 @@ class LearningPathProfile(Model):
 def balanced_learning_path_profile() -> LearningPathProfile:
     """Provide the compatibility default for courses created before profiles."""
     return LearningPathProfile(variant=LearningPathVariant.BALANCED)
+
+
+class AuditEvent(Model):
+    """Versioned, privacy-conscious event envelope; unknown legacy events stay readable."""
+
+    model_config = ConfigDict(extra="allow")
+    audit_schema_version: Literal[1]
+    event_id: str = Field(min_length=1)
+    event: str = Field(min_length=1)
+    timestamp: AwareDatetime
+    profile_version: int | None = Field(default=None, ge=1)
+    plan_version: int | None = Field(default=None, ge=1)
+    learning_path_profile: LearningPathProfile | None = None
+    routing_reason: str | None = Field(default=None, min_length=1)
+    evidence_refs: list[Annotated[str, Field(min_length=1)]] = Field(default_factory=list)
+
+    @model_validator(mode="before")
+    @classmethod
+    def exclude_conversations(cls, value):
+        def contains_conversation(data):
+            if isinstance(data, dict):
+                blocked = {
+                    "brief",
+                    "conversation",
+                    "learner_profile",
+                    "messages",
+                    "plan",
+                    "profile",
+                    "transcript",
+                }
+                return any(str(key).lower() in blocked for key in data) or any(
+                    contains_conversation(item) for item in data.values()
+                )
+            if isinstance(data, (list, tuple)):
+                return any(contains_conversation(item) for item in data)
+            return False
+
+        if contains_conversation(value):
+            raise ValueError("audit events must not store conversation content")
+        return value
 
 
 class PlanStage(Model):

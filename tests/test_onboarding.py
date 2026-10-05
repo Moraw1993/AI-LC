@@ -4,13 +4,16 @@ from importlib.resources import files
 import pytest
 import yaml
 from domain_fixtures import PACKS, load_test_domains
+from pydantic import ValidationError
 
 from ailearn.cli import main
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise
 from ailearn.graph import Graph
 from ailearn.harness_contract import validate_delivery
+from ailearn.history import append_history
 from ailearn.models import (
+    AuditEvent,
     Baseline,
     CoursePlanProposal,
     Dimension,
@@ -271,6 +274,100 @@ def test_plan_revision_requires_reapproval_and_is_audited(course):
         assert original.status == "superseded"
         assert state.history[-2]["event"] == "plan.revised"
         assert state.history[-1]["event"] == "plan.approved"
+
+
+def test_history_references_profile_and_plan_versions_without_copying_profile(course):
+    legacy_profile = profile().model_dump(mode="json")
+    legacy_profile.pop("schema_version")
+    assert LearningProfile.model_validate(legacy_profile).schema_version == 1
+
+    history = course.load().history
+    profile_event = next(event for event in history if event["event"] == "profile.selected")
+    proposed = next(event for event in history if event["event"] == "plan.proposed")
+    approved = next(event for event in history if event["event"] == "plan.approved")
+
+    assert profile_event["audit_schema_version"] == 1
+    assert profile_event["profile_version"] == 1
+    assert "prior_knowledge" not in profile_event
+    assert "learner" not in profile_event
+    assert proposed["plan_version"] == proposed["version"] == 1
+    assert proposed["profile_version"] == 1
+    assert proposed["learning_path_profile"] == {"schema_version": 1, "variant": "balanced"}
+    assert approved["plan_version"] == approved["version"] == 1
+    assert approved["approval"] == "approved"
+    assert proposed["event_id"] != approved["event_id"]
+
+
+def test_session_and_evidence_history_keep_routes_and_references_only(course, tmp_path, capsys):
+    prefix = ["--workspace", str(course.workspace)]
+    assert main(prefix + ["session"]) == 0
+    capsys.readouterr()
+    assessment = result("statistics.mean", "history-baseline-mean")
+    evidence_file = tmp_path / "history-evidence.json"
+    evidence_file.write_text(assessment.model_dump_json(), "utf-8")
+    assert main(prefix + ["record", str(evidence_file)]) == 0
+    capsys.readouterr()
+
+    history = course.load().history
+    session = next(event for event in history if event["event"] == "session")
+    recorded = next(event for event in reversed(history) if event["event"] == "evidence")
+    assert session["routing_reason"]
+    assert session["profile_version"] == 1
+    assert session["plan_version"] == 1
+    assert session["route"]["action"] == "diagnostic"
+    assert "brief" not in session
+    assert recorded["evidence_refs"] == ["history-baseline-mean"]
+    assert recorded["session_event_ref"] == session["event_id"]
+    assert recorded["routing_reason"] == session["routing_reason"]
+    assert "notes" not in recorded
+    assert not {"conversation", "messages", "transcript"} & session.keys()
+
+
+def test_history_cli_and_export_preserve_legacy_events(course, capsys):
+    legacy = {"event": "legacy-extension", "custom_value": "preserved"}
+    with course.transaction() as state:
+        state.history.insert(0, legacy)
+
+    prefix = ["--workspace", str(course.workspace)]
+    assert main(prefix + ["history"]) == 0
+    history_output = json.loads(capsys.readouterr().out)
+    assert history_output[0] == legacy
+
+    assert main(prefix + ["export"]) == 0
+    exported = json.loads(capsys.readouterr().out)
+    assert exported["history"][0] == legacy
+
+
+def test_audit_event_rejects_nested_conversation_payload():
+    for extra in [
+        {"route": {"messages": ["private conversation"]}},
+        {"brief": {"instructions": "full task brief"}},
+        {"route": {"profile": {"prior_knowledge": "private learner detail"}}},
+    ]:
+        with pytest.raises(ValueError, match="must not store conversation content"):
+            AuditEvent.model_validate({"event": "session", **extra})
+
+
+def test_audit_event_contract_is_public(capsys):
+    assert main(["schema", "AuditEvent"]) == 0
+    schema = json.loads(capsys.readouterr().out)
+    assert schema["title"] == "AuditEvent"
+    assert {"audit_schema_version", "event_id", "event", "timestamp"} <= set(schema["required"])
+
+
+def test_corrupt_or_duplicate_versioned_history_cannot_be_saved(course):
+    state_file = course.root / "state.json"
+    before = state_file.read_bytes()
+    with pytest.raises(ValidationError, match="event_id"):
+        with course.transaction() as state:
+            state.history.append({"audit_schema_version": 1, "event": "invalid"})
+    assert state_file.read_bytes() == before
+
+    with pytest.raises(ValueError, match="duplicate audit event ID"):
+        with course.transaction() as state:
+            append_history(state, "test-event")
+            state.history.append(state.history[-1].copy())
+    assert state_file.read_bytes() == before
 
 
 def test_adaptive_plan_cannot_change_learner_approved_path(course):

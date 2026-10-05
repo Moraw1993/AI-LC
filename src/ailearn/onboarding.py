@@ -1,6 +1,7 @@
 """Conversation-first onboarding and diagnostic readiness, without an LLM client."""
 
 from ailearn.graph import Graph
+from ailearn.history import append_history, audit_context
 from ailearn.models import (
     Baseline,
     CoursePlan,
@@ -19,6 +20,7 @@ def onboarding_brief() -> dict:
         "roles": ["master"],
         "skill": "ai-lc-master",
         "action": "conversation",
+        "reason": "Collect explicit learner intent before configuring a course.",
         "instructions": "Ask what the learner wants to learn and why. Establish the target "
         "ability, prior experience, language, working style, tutor name and workspace name. "
         "Discuss whether the learner prefers focused core practice, a balanced sequence or "
@@ -54,6 +56,7 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
         "agent_name": profile.agent_name,
         "language": profile.language,
         "action": "diagnostic" if missing else "complete-intake",
+        "reason": "Collect independent baseline evidence for the agreed diagnostic competencies.",
         "missing_diagnostics": missing,
         "outcomes": node.outcomes,
         "prior_knowledge": profile.prior_knowledge,
@@ -89,6 +92,11 @@ def _plan_gate(state: Snapshot, phase: PlanPhase) -> dict:
         "plan_phase": phase.value,
         "plan_version": current.version if current else None,
         "roles": ["master"] if current else ["curriculum-architect", "master"],
+        "reason": (
+            "Wait for explicit learner approval of the current plan version."
+            if current
+            else "Propose the current course phase for explicit learner approval."
+        ),
         "instructions": (
             f"Prepare and present the {stage} in the learner's language. Explain its "
             "goal, stages, working method, projects and role boundaries. Include one built-in "
@@ -271,14 +279,22 @@ def propose_plan(
             prior.status = "superseded"
     plan = CoursePlan(**proposal.model_dump(), version=version, status="proposed")
     state.plans.append(plan)
-    state.history.append(
-        {
-            "event": "plan.revised" if revise else "plan.proposed",
-            "timestamp": now().isoformat(),
-            "version": version,
-            "phase": phase.value,
-            "supersedes_version": previous[-1].version if previous else None,
-        }
+    evidence_refs = (
+        state.intake.baseline.evidence_ids
+        if phase == PlanPhase.ADAPTIVE and state.intake.baseline is not None
+        else []
+    )
+    append_history(
+        state,
+        "plan.revised" if revise else "plan.proposed",
+        timestamp=plan.created_at,
+        profile_version=state.intake.profile.schema_version,
+        plan_version=version,
+        learning_path_profile=plan.learning_path_profile.model_dump(mode="json"),
+        evidence_refs=evidence_refs,
+        version=version,
+        phase=phase.value,
+        supersedes_version=previous[-1].version if previous else None,
     )
     return plan
 
@@ -296,13 +312,22 @@ def approve_plan(state: Snapshot, version: int) -> CoursePlan:
     approved = plans[-1]
     approved.status = "approved"
     approved.approved_at = now()
-    state.history.append(
-        {
-            "event": "plan.approved",
-            "timestamp": approved.approved_at.isoformat(),
-            "version": approved.version,
-            "phase": phase.value,
-        }
+    evidence_refs = (
+        state.intake.baseline.evidence_ids
+        if phase == PlanPhase.ADAPTIVE and state.intake.baseline is not None
+        else []
+    )
+    append_history(
+        state,
+        "plan.approved",
+        timestamp=approved.approved_at,
+        profile_version=state.intake.profile.schema_version,
+        plan_version=approved.version,
+        learning_path_profile=approved.learning_path_profile.model_dump(mode="json"),
+        evidence_refs=evidence_refs,
+        version=approved.version,
+        phase=phase.value,
+        approval="approved",
     )
     state.session = {}
     return approved
@@ -330,11 +355,10 @@ def complete_intake(state: Snapshot, baseline: Baseline) -> None:
         raise ValueError("baseline does not cover the agreed diagnostic competencies")
     state.intake.baseline = baseline
     state.session = {}
-    state.history.append(
-        {
-            "event": "baseline-completed",
-            "timestamp": now().isoformat(),
-            "evidence_ids": baseline.evidence_ids,
-            "summary": baseline.summary,
-        }
+    append_history(
+        state,
+        "baseline-completed",
+        **audit_context(state),
+        evidence_refs=baseline.evidence_ids,
+        evidence_ids=baseline.evidence_ids,
     )

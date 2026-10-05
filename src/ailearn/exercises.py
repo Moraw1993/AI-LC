@@ -3,6 +3,7 @@
 import ast
 
 from ailearn.graph import Graph
+from ailearn.history import append_history, audit_context
 from ailearn.models import Exercise, ExerciseArtifact
 from ailearn.store import Store
 
@@ -78,7 +79,14 @@ def create_exercise(store: Store, exercise: Exercise) -> ExerciseArtifact:
                 stream.write(content)
             created = True
             state.exercises.append(artifact)
-            state.history.append({"event": "exercise-created", **artifact.model_dump(mode="json")})
+            append_history(
+                state,
+                "exercise-created",
+                **audit_context(state),
+                routing_reason=state.session.get("reason"),
+                session_event_ref=state.session.get("_audit_event_id"),
+                artifact=artifact.model_dump(mode="json"),
+            )
     except Exception:
         # Roll back our new scaffold if snapshot publication fails, preserving any learner edits.
         if created and destination.exists() and destination.read_text("utf-8") == content:

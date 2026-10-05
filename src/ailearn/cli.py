@@ -14,6 +14,7 @@ from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise, validate_artifacts
 from ailearn.graph import Graph, load_domains
 from ailearn.harness_contract import required_capabilities, validate_delivery
+from ailearn.history import append_history, audit_context, route_evidence_refs
 from ailearn.models import (
     Baseline,
     CoursePlanProposal,
@@ -22,7 +23,6 @@ from ailearn.models import (
     LearningProfile,
     Scope,
     active_evidence,
-    now,
 )
 from ailearn.onboarding import (
     approve_plan,
@@ -75,7 +75,7 @@ def parser() -> argparse.ArgumentParser:
     revise.add_argument("file", type=Path)
     approve = plan_actions.add_parser("approve", help="Approve a proposed course plan")
     approve.add_argument("version", type=int)
-    commands.add_parser("history", help="Show session and evidence audit history")
+    commands.add_parser("history", help="Show append-only decision and evidence history")
     session = commands.add_parser("session", help="Create a just-in-time agent task brief")
     session.add_argument("--scope", choices=list(Scope))
     evidence = commands.add_parser("record", help="Import independently assessed evidence JSON")
@@ -103,6 +103,7 @@ def parser() -> argparse.ArgumentParser:
             "CoursePlanProposal",
             "CoursePlan",
             "Snapshot",
+            "AuditEvent",
             "HarnessManifest",
             "HarnessBrief",
         ],
@@ -203,10 +204,34 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "session":
             with store.transaction() as state:
                 brief = next_action(state, Scope(args.scope) if args.scope else None)
-                state.session = brief
-                state.history.append(
-                    {"event": "session", "timestamp": now().isoformat(), "brief": brief}
+                context = audit_context(state)
+                path_profile = brief.get(
+                    "learning_path_profile", context.get("learning_path_profile")
                 )
+                event_id = append_history(
+                    state,
+                    "session",
+                    profile_version=context.get("profile_version"),
+                    plan_version=brief.get("plan_version") or context.get("plan_version"),
+                    learning_path_profile=path_profile,
+                    routing_reason=brief.get("reason")
+                    or "The current workflow gate selected this action.",
+                    evidence_refs=route_evidence_refs(state, brief),
+                    route={
+                        key: brief[key]
+                        for key in (
+                            "phase",
+                            "action",
+                            "scope",
+                            "competency",
+                            "dimension",
+                            "roles",
+                        )
+                        if key in brief
+                    },
+                    requested_scope=args.scope,
+                )
+                state.session = {**brief, "_audit_event_id": event_id}
             print(dumps(brief))
         else:
             state = store.load()

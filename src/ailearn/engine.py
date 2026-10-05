@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta
 
 from ailearn.graph import Graph, required
+from ailearn.history import append_history, audit_context
 from ailearn.models import (
     Dimension,
     Evidence,
@@ -212,16 +213,21 @@ def record(
             raise ValueError("retention is only valid when a scheduled review is due")
     state.knowledge[key] = k
     state.evidence.append(evidence)
+    audit = audit_context(state)
+    session_event_id = state.session.get("_audit_event_id")
     if replace_id is not None:
-        state.history.append(
-            {
-                "event": "evidence-revised",
-                "id": evidence.id,
-                "supersedes_id": replace_id,
-                "attempt_id": evidence.attempt_id,
-                "dimension": evidence.dimension.value,
-                "timestamp": evidence.timestamp.isoformat(),
-            }
+        append_history(
+            state,
+            "evidence-revised",
+            timestamp=evidence.timestamp,
+            **audit,
+            routing_reason=state.session.get("reason"),
+            evidence_refs=[evidence.id, replace_id],
+            session_event_ref=session_event_id,
+            id=evidence.id,
+            supersedes_id=replace_id,
+            attempt_id=evidence.attempt_id,
+            dimension=evidence.dimension.value,
         )
     if evidence.kind in NON_EVIDENCE:
         if k.stage == Stage.UNSEEN:
@@ -255,14 +261,18 @@ def record(
         elif evidence.independent and not good and k.review_due is not None:
             k.review_step = 0
             k.review_due = evidence.timestamp + timedelta(days=1)
-    state.history.append(
-        {
-            "event": "evidence",
-            "id": evidence.id,
-            "competency": key,
-            "stage": k.stage.value,
-            "timestamp": evidence.timestamp.isoformat(),
-        }
+    append_history(
+        state,
+        "evidence",
+        timestamp=evidence.timestamp,
+        **audit,
+        routing_reason=state.session.get("reason"),
+        evidence_refs=[evidence.id],
+        session_event_ref=session_event_id,
+        requested_scope=state.session.get("scope"),
+        id=evidence.id,
+        competency=key,
+        stage=k.stage.value,
     )
     # Recompute the plan after every assessment, rather than maintaining a fixed sequence.
     if state.session.get("scope") != "explore":

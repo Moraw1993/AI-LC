@@ -9,6 +9,7 @@ from importlib.resources import files
 from pathlib import Path
 
 from ailearn.graph import Graph
+from ailearn.history import append_history, validate_history
 from ailearn.models import Bootstrap, Config, Intake, LearningProfile, Snapshot, now
 
 
@@ -23,6 +24,7 @@ class Store:
         if not self.root.exists():
             raise ValueError("workspace is not initialized; run ailearn init")
         state = Snapshot.model_validate_json((self.root / "state.json").read_text("utf-8"))
+        validate_history(state.history)
         graph = Graph(state.domains)
         if state.config.domain not in graph.domains:
             raise ValueError("configured domain is missing")
@@ -230,6 +232,7 @@ class Store:
 
     def save(self, state: Snapshot):
         # Publishing one authoritative file makes evidence+state+history one transaction.
+        validate_history(state.history)
         self._atomic(self.root / "state.json", state.model_dump_json(indent=2))
 
     def _atomic(self, destination: Path, content: str) -> None:
@@ -281,6 +284,12 @@ class Store:
                 plan_workflow=plan_workflow,
                 history=[{"event": "initialization", "timestamp": now().isoformat()}],
             )
+            if intake is not None:
+                append_history(
+                    state,
+                    "profile.selected",
+                    profile_version=intake.profile.schema_version,
+                )
             (stage / "state.json").write_text(state.model_dump_json(indent=2), "utf-8")
             stage.rename(self.root)
         finally:

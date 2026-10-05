@@ -203,12 +203,16 @@ Run these through `ailearn COMMAND`. Installed skills use the same executable.
 | `session --scope SCOPE` | Save a task brief for the harness |
 | `record FILE --sensors FILE --replace EVIDENCE_ID` | Validate evidence and optionally revise a prior judgment for the same attempt/dimension |
 | `doctor` | Validate schema, DAG and evidence replay |
-| `history` | Read session and evidence audit events |
+| `history` | Read versioned decision, routing and evidence audit events |
 | `export --evidence-jsonl` | Print full portable state or evidence lines |
 | `sensors FILE` | Run structured checks without executing code |
 | `harness validate MANIFEST BRIEF` | Validate a versioned brief against declared harness capabilities |
 | `sources` | List official dataset entry points |
-| `schema MODEL` | Print LearningProfile, Domain, Baseline, Evidence, Exercise, Snapshot or harness contract JSON schema |
+| `schema MODEL` | Print LearningProfile, Domain, Baseline, Evidence, Exercise, Snapshot, AuditEvent or harness contract JSON schema |
+
+Versioned history links plan/profile versions, approval decisions, routing reasons and evidence
+IDs without storing full conversations or copying learner profile text into audit events.
+Older history entries remain readable and are preserved in exports.
 
 Harness integrations can inspect `ailearn schema HarnessManifest` and `ailearn schema
 HarnessBrief`. Capability manifests are declarations, not proof of tool execution. See
