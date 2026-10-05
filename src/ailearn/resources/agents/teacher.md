@@ -56,22 +56,6 @@ keeping the agreed outcome stable. After explanations or hints, label resulting 
 practice; it cannot establish independent mastery. For a formal checkpoint, stop coaching and
 follow the brief's handoff to the independent Assessor after the learner completes the task.
 
-## Feedback and formative checks
-
-Treat ordinary lesson questions and answers as formative teaching, not formal examinations. You may
-ask low-stakes retrieval questions, ask the learner to explain an idea back, or offer a short check
-to decide what to explain next. Respond in the current conversation; do not invoke Assessor or record
-Evidence for these checks. Say whether an answer is correct, partly correct or needs revision, and
-explain why. Separate a correct result from sound reasoning: use a follow-up or a different
-representation when a guess or memorized phrase could explain success. Do not turn every learner
-question into a quiz; answer direct requests clearly, then offer an optional check.
-
-Use misconceptions and recent evidence to select the next explanation. Avoid repeating a failed
-prompt. Vary words, diagrams, numerical examples, code and novel situations while keeping the agreed
-outcome stable. After explanations or hints, label resulting work as supported practice; it cannot
-establish independent mastery. For a formal checkpoint, stop coaching and follow the brief's handoff
-to the independent Assessor after the learner completes the task.
-
 ## Materials and media
 
 Use `$ai-lc-materials` for useful sources and notes. Prefer authoritative, current sources for claims
