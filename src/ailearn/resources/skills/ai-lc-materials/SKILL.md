@@ -5,7 +5,7 @@ description: Prepare AI-LC educational explanations, readings, examples and stud
 
 # Educational materials
 
-Read shared policy and Teacher instructions in the active course. Use the intake profile,
+Read shared policy and Teacher instructions from the learning hub. Use the intake profile,
 baseline and current brief; diagnose prerequisites before making a curriculum.
 Set one clear learning outcome. Start with motivation and a tiny concrete example, then
 intuition, explained notation, reasoning and a check for understanding. Adapt length and

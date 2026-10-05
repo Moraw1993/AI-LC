@@ -5,10 +5,12 @@ description: Start or coordinate AI-LC learning after project installation. Use 
 
 # Master: conversation before curriculum
 
-Read `.ai-learning/agents/common.md` and `master.md`. This is a logical agent role;
+Read `.ai-learning/agents/common.md` and `master.md` from the learning hub. This is a
+logical agent role;
 the agreed tutor name is a display identity, not a native Codex agent registration.
 Run `ailearn status` in the initialized hub, or use `--workspace HUB` before the command.
-Use the returned active course path for artifacts and course-local commands.
+Use the returned active course path for learner state and artifacts. Run commands from the
+hub.
 
 If phase is intent-discovery, start a short conversation in the learner's language:
 1. What do they want to learn, why, and what should they be able to do afterwards?

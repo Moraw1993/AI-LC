@@ -12,8 +12,10 @@ experience, language, style, tutor display name and course name. `configure` val
 a LearningProfile and course-authored packs, creates `workspaces/<name>`, enables versioned plan gates
 for new courses, and atomically publishes that active course reference in the hub. New
 learners approve an overview before diagnosis and an adaptive plan after baseline before
-teaching. Commands from the hub route to the active course;
-commands from the course work directly. Reusing a name requires the same profile and packs.
+teaching. Commands run from the hub and route to the active course. A course stores its
+state and learner artifacts; it does not receive duplicate hub roles, skills, or commands.
+Course-specific instructions and agents can be added when needed. Reusing a name requires
+the same profile and packs.
 
 Release distribution uses PyInstaller to bundle Python, dependencies and all ailearn
 resources into one executable per OS/architecture. `scripts/build_native.py` verifies
@@ -33,9 +35,9 @@ A failed configuration can leave a valid hub; repeating the command safely compl
 
 The legacy project-local installer remains compatible: `install.py` and `installer.py`
 use temporary venv/pip to stage `.ai-lc/runtime`, with source/interpreter manifests.
-Its `.ai-learning/commands/ailearn.py` launcher binds to its course/hub and discovers the
-ancestor runtime. Legacy users substitute that command for `ailearn` when no global
-command exists. Release usage requires no installed Python or uv; development uses uv.
+Standalone legacy workspaces retain their local `.ai-learning/commands/ailearn.py`
+launcher, which discovers the ancestor runtime. Release usage requires no installed
+Python or uv; development uses uv.
 `schema MODEL` exposes contracts without imports in an unknown interpreter.
 
 `onboarding.py` gates new-course diagnosis on an approved overview and teaching on both

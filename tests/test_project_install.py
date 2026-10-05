@@ -79,16 +79,18 @@ def test_project_install_no_global_tool_and_idempotency(project):
     assert "target" in json.loads(schema.stdout)["required"]
 
 
-def test_course_launcher_inherits_runtime_and_binds_course(project):
+def test_hub_launcher_routes_to_active_course(project):
     from test_onboarding import profile
 
     installer.install(project, SOURCE)
     course = Store(project).configure(profile(), load_test_domains())
-    output = command(course.workspace, "status", cwd=project.parent)
+    output = command(project, "status", cwd=project.parent)
     assert output.returncode == 0, output.stderr
     status = json.loads(output.stdout)
     assert status["workspace"] == str(course.workspace)
     assert status["intake"]["profile"]["agent_name"] == "Ada"
+    assert not (course.workspace / ".ai-learning/commands/ailearn.py").exists()
+    assert not (course.workspace / ".agents/skills").exists()
     assert installer.install(project, SOURCE) is False
     assert Store(project).active().workspace == course.workspace
 

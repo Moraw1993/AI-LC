@@ -5,7 +5,8 @@ description: Create short, numbered Python exercises for AI-LC lessons, topics a
 
 # Short Python tasks
 
-Read shared policy and Lab Coach instructions; use the active course's profile and brief.
+Read shared policy and Lab Coach instructions from the learning hub; use the active
+course's profile and brief.
 Before baseline completion create diagnostic tasks only. Generate a fresh task for the
 needed outcome and difficulty; never choose from a static exercise bank.
 

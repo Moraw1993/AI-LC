@@ -68,8 +68,11 @@ tutor's chosen name lives in the agreed profile.
 
 Master prepares an explicit profile and, if necessary, a new domain pack. It invokes
 `ailearn configure profile.json --packs packs`, creating
-`workspaces/<agreed-name>`. Before diagnosis, Curriculum Architect prepares an overview
-plan and Master presents its goal, stages, working method, projects and role boundaries.
+`workspaces/<agreed-name>` with its own course state. Shared roles, skills and commands
+stay in the learning hub; run AI-LC commands from the hub. A course can add specific
+instructions or agents when needed. Before diagnosis, Curriculum Architect prepares an
+overview plan and Master presents its goal, stages, working method, projects and role
+boundaries.
 The learner reviews it and approves the proposed version before diagnosis begins.
 
 Teacher then gathers relevant prerequisite knowledge and current ability through the
@@ -258,9 +261,9 @@ course-specific competency graph from the learner's goal and validate it before 
 Existing `.ai-learning/state.json` snapshots remain readable without rewriting or
 inventing an intake baseline. Their previous evidence rules remain unchanged. The CLI's
 old topic flags on `init` have been replaced by Master-led `configure`; use `init` in a
-new directory for the new conversation-first flow. Re-running `init` in an old course
-adds local helpers and skills while preserving its snapshot and instructions. The project
-installer can attach runtime to an existing course when its packaged files match; it
+new directory for the new conversation-first flow. Re-running `init` in an old standalone
+course adds local helpers and skills while preserving its snapshot and instructions. The project
+installer can attach runtime to an existing standalone course when its packaged files match; it
 does not silently replace older or edited skills/commands. Existing conflicting skill
 files fail clearly and are preserved. The internal `Store.init(Config, domains)` API
 remains available for legacy integrations.
