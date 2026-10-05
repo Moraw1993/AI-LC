@@ -9,6 +9,7 @@ from ailearn.cli import main
 from ailearn.engine import mastered, next_action, record, roadmap
 from ailearn.exercises import create_exercise
 from ailearn.graph import Graph
+from ailearn.harness_contract import validate_delivery
 from ailearn.models import (
     Baseline,
     CoursePlanProposal,
@@ -19,8 +20,17 @@ from ailearn.models import (
     LearningPathVariant,
     LearningProfile,
     PlanStage,
+    Scope,
 )
-from ailearn.onboarding import approve_plan, complete_intake, propose_plan, validate_course_plans
+from ailearn.onboarding import (
+    approve_plan,
+    complete_intake,
+    diagnostic_brief,
+    onboarding_brief,
+    planning_brief,
+    propose_plan,
+    validate_course_plans,
+)
 from ailearn.store import Store
 
 
@@ -107,6 +117,28 @@ def plan_proposal(state, phase, **changes):
             **changes,
         }
     )
+
+
+def test_existing_onboarding_and_session_briefs_follow_harness_contract(course):
+    fixture = json.loads((PACKS.parent / "harness" / "codex-v1.json").read_text("utf-8"))
+    manifest = fixture["manifest"]
+    validate_delivery(manifest, onboarding_brief())
+
+    state = course.load()
+    unapproved = state.model_copy(deep=True)
+    unapproved.plans = []
+    validate_delivery(manifest, planning_brief(unapproved))
+
+    diagnostic = diagnostic_brief(state)
+    assert diagnostic is not None
+    validate_delivery(manifest, diagnostic)
+
+    finish_baseline(course)
+    session = next_action(course.load())
+    validate_delivery(manifest, session)
+    wait = next_action(course.load(), Scope.REVIEW)
+    assert wait["action"] == "wait-for-review"
+    validate_delivery(manifest, wait)
 
 
 def test_baseline_diagnostic_is_a_formal_checkpoint(course):

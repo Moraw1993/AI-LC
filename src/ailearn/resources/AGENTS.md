@@ -4,7 +4,10 @@ AI-LC is installed for the current user. Invoke `ailearn COMMAND` from this
 learning workspace, or `ailearn --workspace /absolute/path COMMAND` from elsewhere.
 The release executable includes Python and dependencies; no uv or activation is required.
 Read contracts with `ailearn schema MODEL` (LearningProfile, Domain, Baseline, Evidence,
-or Exercise, CoursePlanProposal or CoursePlan). Run `ailearn config --harness codex` to initialize a neutral hub and skills.
+Exercise, CoursePlanProposal, CoursePlan, HarnessManifest or HarnessBrief). Harness
+integrations validate their versioned manifest and task brief with
+`ailearn harness validate manifest.json brief.json`; this checks declarations only and does
+not prove that a tool ran. Run `ailearn config --harness codex` to initialize a neutral hub and skills.
 Keep learner state outside the framework development repository.
 Legacy project-local installations without a global command can substitute
 `python .ai-learning/commands/ailearn.py` for `ailearn` in all instructions.

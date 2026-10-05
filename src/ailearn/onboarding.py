@@ -14,6 +14,7 @@ from ailearn.models import (
 
 def onboarding_brief() -> dict:
     return {
+        "schema_version": 1,
         "phase": "intent-discovery",
         "roles": ["master"],
         "skill": "ai-lc-master",
@@ -43,6 +44,7 @@ def diagnostic_brief(state: Snapshot) -> dict | None:
     key = missing[0] if missing else profile.diagnostic_competencies[-1]
     node = Graph(state.domains).nodes[key]
     return {
+        "schema_version": 1,
         "phase": "discovery",
         "scope": "assessment",
         "competency": key,
@@ -80,6 +82,7 @@ def _plan_gate(state: Snapshot, phase: PlanPhase) -> dict:
     action = "await-plan-approval" if current is not None else "propose-plan"
     stage = "course-outline" if phase == PlanPhase.OVERVIEW else "adaptive-roadmap"
     return {
+        "schema_version": 1,
         "phase": "course-planning",
         "scope": "plan-review",
         "action": action,

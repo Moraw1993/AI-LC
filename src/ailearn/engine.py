@@ -375,10 +375,13 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
     ]
     if scope == Scope.REVIEW and not due:
         return {
+            "schema_version": 1,
             "phase": "consolidation",
             "action": "wait-for-review",
             "scope": "review",
             "reason": "No delayed retrieval is due yet.",
+            "roles": ["master"],
+            "instructions": "No delayed retrieval is due. Wait until the scheduled review is due.",
         }
     if due:
         key = min(due, key=lambda key: state.knowledge[key].review_due)
@@ -399,9 +402,13 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
             key = next((key for key in path if not passed(state, key, Dimension.TRANSFER)), None)
             if key is None:
                 return {
+                    "schema_version": 1,
                     "phase": "consolidation",
                     "action": "wait-for-review",
                     "reason": "Core and transfer gates passed; retain through delayed retrieval.",
+                    "roles": ["master"],
+                    "instructions": "Core and transfer gates passed. Continue with delayed "
+                    "retrieval when it is due.",
                 }
             selected, dimension = Scope.PROJECT, Dimension.TRANSFER
             reason = "Demonstrate transfer on an unseen problem or dataset."
@@ -474,6 +481,8 @@ def next_action(state: Snapshot, scope: Scope | None = None, at: datetime | None
     }
     selected_roles = roles.get(selected, ["teacher", "lab-coach"])
     return {
+        "schema_version": 1,
+        "action": selected.value,
         "phase": "consolidation"
         if selected == Scope.REVIEW
         else "application"
