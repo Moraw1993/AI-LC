@@ -326,16 +326,16 @@ def test_session_and_evidence_history_keep_routes_and_references_only(course, tm
 def test_history_cli_and_export_preserve_legacy_events(course, capsys):
     legacy = {"event": "legacy-extension", "custom_value": "preserved"}
     with course.transaction() as state:
-        state.history.insert(0, legacy)
+        state.history.append(legacy)
 
     prefix = ["--workspace", str(course.workspace)]
     assert main(prefix + ["history"]) == 0
     history_output = json.loads(capsys.readouterr().out)
-    assert history_output[0] == legacy
+    assert history_output[-1] == legacy
 
     assert main(prefix + ["export"]) == 0
     exported = json.loads(capsys.readouterr().out)
-    assert exported["history"][0] == legacy
+    assert exported["history"][-1] == legacy
 
 
 def test_audit_event_rejects_nested_conversation_payload():
@@ -358,6 +358,11 @@ def test_audit_event_contract_is_public(capsys):
 def test_corrupt_or_duplicate_versioned_history_cannot_be_saved(course):
     state_file = course.root / "state.json"
     before = state_file.read_bytes()
+    with pytest.raises(ValueError, match="append-only"):
+        with course.transaction() as state:
+            state.history[0]["event"] = "rewritten"
+    assert state_file.read_bytes() == before
+
     with pytest.raises(ValidationError, match="event_id"):
         with course.transaction() as state:
             state.history.append({"audit_schema_version": 1, "event": "invalid"})

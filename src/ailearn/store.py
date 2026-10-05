@@ -233,7 +233,13 @@ class Store:
     def save(self, state: Snapshot):
         # Publishing one authoritative file makes evidence+state+history one transaction.
         validate_history(state.history)
-        self._atomic(self.root / "state.json", state.model_dump_json(indent=2))
+        destination = self.root / "state.json"
+        if destination.exists():
+            previous = Snapshot.model_validate_json(destination.read_text("utf-8"))
+            previous_history = previous.history
+            if state.history[: len(previous_history)] != previous_history:
+                raise ValueError("audit history is append-only; existing events cannot be changed")
+        self._atomic(destination, state.model_dump_json(indent=2))
 
     def _atomic(self, destination: Path, content: str) -> None:
         fd, name = tempfile.mkstemp(prefix="state-", suffix=".tmp", dir=self.root)
