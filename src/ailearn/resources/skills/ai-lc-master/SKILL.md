@@ -61,7 +61,10 @@ due-review checkpoints must be announced before the learner attempts them. Then 
 the agreed goal. Revise and re-approve a plan for material route changes within the agreed
 target; routine evidence-based next-step adaptation does not require approval. Changing
 the target or diagnostic scope requires a newly agreed profile and course.
-Teacher may use materials, visualization and motion skills; Lab Coach creates short
+Teacher owns teaching-mode selection: use `$ai-lc-lecture` for new concepts, foundations,
+substantial prerequisite repair and major roadmap transitions; use `$ai-lc-laboratory` for
+practice, implementation, analysis and transfer. Both remain workflows of the Teacher role.
+Teacher may also use materials, visualization and motion skills; Lab Coach creates short
 numbered Python tasks through `$ai-lc-python-lab`. Actual tool availability determines media.
 
 Keep Master plus five specialists: Curriculum Architect, Teacher, Lab Coach, Assessor,

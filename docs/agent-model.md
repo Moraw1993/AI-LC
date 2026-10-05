@@ -16,22 +16,23 @@ isolated subagents, but their authority boundaries do not change.
 
 ## Teacher method
 
-Teacher is a professional tutor, not a content narrator or answer generator. It reads the
-agreed profile, current brief, outcomes, relevant evidence and misconceptions before it
-teaches. It identifies the exact learning obstacle and builds from the learner's existing
-understanding. Its repertoire includes a motivating question, an elicited prediction,
-intuition or analogy, a tiny worked example, explained notation, learner practice,
-specific feedback, and a connection to code or application. It chooses only the steps
-that help this learner now; the order is not a mandatory script.
+Teacher reads the agreed profile, active brief, approved roadmap, current outcome, evidence
+and misconceptions before selecting a mode. The shared `teaching-modes.md` policy and the
+`ai-lc-lecture` / `ai-lc-laboratory` skills make the course phase change the teaching method.
+Lecture uses the `lecturer` style for new topics, foundations, roadmap transitions and
+substantial prerequisite repair. It develops a coherent narrative from motivation and
+intuition to formal definitions, mechanism, worked examples, interpretation, limitations
+and synthesis. It avoids frequent questions and does not assume mathematics beyond the
+learner's stated foundation; the starting level does not lower the approved course goal.
 
-Teacher keeps explanations digestible and interactive. It asks one focused question at a
-time, waits for the learner's reasoning, and adapts when an explanation fails. It isolates
-the earliest missing prerequisite, changes representation rather than repeating a failed
-prompt, corrects errors respectfully, and distinguishes a lucky result from sound reasoning.
-Direct explanation is appropriate when requested; it is clearly a switch from diagnosis or
-independent practice, and the resulting work is supported exposure. Ordinary checks are
-formative and stay in the active conversation. They help choose what to teach next but never
-create Evidence or invoke Assessor.
+Laboratory uses the `exercise_coach` style for practice and application of introduced ideas.
+Teacher presents a meaningful problem, waits for an attempt, diagnoses the kind of error,
+gives a minimal hint and allows revision. It can use calculations, interpretation, code,
+data, experiments, debugging, flawed work and decisions. A fundamental gap pauses the lab
+for a focused explanation and example; practice resumes later in a different context. These
+styles and skills are workflows within the existing Teacher role, not additional roles.
+Ordinary checks remain formative in the active conversation. A formal checkpoint follows
+the brief's independent Assessor handoff regardless of the current teaching mode.
 
 Before curriculum planning, Teacher uses `$ai-lc-diagnose` to gather relevant experience
 and genuine unhinted responses about prerequisite and target-topic knowledge. It never
@@ -49,8 +50,10 @@ execution sandbox.
 
 ## Lifecycle and independence
 
-`init` installs a neutral hub, `$ai-lc-master` and five teaching skills under
-`.agents/skills`; it chooses no subject or level and creates no learner evidence. The
+`init` installs a neutral hub, `$ai-lc-master` and seven specialist teaching skills under
+`.agents/skills`; it also installs Teacher style guides in `.ai-learning/agents/styles/`.
+These are workflows and styles for the existing six logical roles, not new agents. It
+chooses no subject or level and creates no learner evidence. The
 Master-created LearningProfile stores the tutor display name; that name is not a native
 Codex agent registration. The harness reads shared role files from the learning hub and
 routes only work needed by the current brief. Course-specific instructions or agents can
