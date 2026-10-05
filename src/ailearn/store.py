@@ -161,10 +161,22 @@ class Store:
 
     def _resources(self, stage: Path) -> None:
         self._install_commands(stage)
-        (stage / "agents").mkdir()
-        for resource in files("ailearn").joinpath("resources/agents").iterdir():
-            if resource.name.endswith(".md"):
-                (stage / "agents" / resource.name).write_text(resource.read_text("utf-8"), "utf-8")
+        for directory in ("agents", "teaching-styles"):
+            source = files("ailearn").joinpath(f"resources/{directory}")
+            destination = (
+                stage / "agents" / "styles" if directory == "teaching-styles" else stage / directory
+            )
+            pending = [(source, destination)]
+            while pending:
+                source_dir, destination_dir = pending.pop()
+                for resource in source_dir.iterdir():
+                    if resource.is_dir():
+                        pending.append((resource, destination_dir / resource.name))
+                    elif resource.name.endswith(".md"):
+                        destination_dir.mkdir(parents=True, exist_ok=True)
+                        (destination_dir / resource.name).write_text(
+                            resource.read_text("utf-8"), "utf-8"
+                        )
         (stage / "AGENTS.md").write_text(
             files("ailearn").joinpath("resources/AGENTS.md").read_text("utf-8"), "utf-8"
         )

@@ -58,8 +58,8 @@ want to learn, why, the abilities you want to achieve, your previous experience,
 pace and style. Together you choose the tutor's display name and course workspace name.
 Initialization chooses **no subject, level or learning path**.
 
-The neutral hub contains `.ai-learning/bootstrap.json`, six role instructions, shared
-policy, `.ai-learning/commands/ailearn.py` and six discoverable skills under `.agents/skills`.
+The neutral hub contains `.ai-learning/bootstrap.json`, six logical role instructions, shared
+policy, `.ai-learning/commands/ailearn.py` and eight discoverable skills under `.agents/skills`.
 Codex discovers skills from
 that directory; see [official skill documentation](https://learn.chatgpt.com/docs/build-skills).
 AI-LC defines provider-independent logical roles and skills. Codex setup also installs a
@@ -128,7 +128,10 @@ evidence-bearing attempt; casual practice and checks during `learn`, `deep-learn
 The learner attempts first; hints progress from conceptual direction to a full solution.
 The actual hint level is recorded, and hinted attempts cannot pass mastery gates.
 
-Teacher uses `$ai-lc-diagnose`, `$ai-lc-materials`, `$ai-lc-visualize` and `$ai-lc-motion`:
+Teacher chooses between `$ai-lc-lecture` for new concepts, foundations and major roadmap
+transitions, and `$ai-lc-laboratory` for practice and application. The two interaction styles
+are installed with the hub's role files; they do not create more roles. Teacher also uses
+`$ai-lc-diagnose`, `$ai-lc-materials`, `$ai-lc-visualize` and `$ai-lc-motion`:
 baseline checks, sourced educational notes, data plots/diagrams/generated illustrations,
 and animated explanations or motion-design videos. Image and video rendering depend on
 the harness's available tools; the skills do not install services. When a video renderer

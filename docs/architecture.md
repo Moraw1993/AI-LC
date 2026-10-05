@@ -27,7 +27,8 @@ Installers check checksums and executable versions before publishing immutable v
 directories and selecting the user command. They never rewrite learner state.
 
 `ailearn config --harness codex` installs a subject-neutral hub, six logical roles and
-six native skills, plus `.codex/rules/ai-lc.rules` for deterministic read commands.
+eight native skills, plus Teacher's two style guides under `agents/styles/` and
+`.codex/rules/ai-lc.rules` for deterministic read commands.
 Existing Codex config.toml, sandbox settings and root AGENTS.md stay untouched.
 Conflicting rules/resources fail; no provider settings or hooks are needed. Each file
 publication is atomic, but hub bootstrap and rules are not a multi-file transaction.
@@ -109,10 +110,12 @@ automatically. Modern implementation evidence must match task path, ID, competen
 CLI import and doctor check registered artifacts exist. All semantic grading and genuine
 code execution remain external-harness responsibilities; no sandbox is supplied.
 
-Teaching skills cover diagnosis, sourced materials, static/data/interactive visualizations,
-image illustrations, motion/video explanations and Python labs. They are packaged workflows,
-not installed media engines. The harness selects available tools and reports unavailable
-rendering honestly. Master plus five specialist roles remain the reasoning boundary;
+Teaching skills cover diagnosis, lecture, laboratory, sourced materials,
+static/data/interactive visualizations, image illustrations, motion/video explanations and
+Python labs. Lecture and laboratory select teaching methods within the existing Teacher role;
+the `lecturer` and `exercise_coach` style guides and shared mode policy are installed beside
+the role instructions. They are packaged workflows, not installed media engines. The harness
+selects available tools and reports unavailable rendering honestly. Master plus five specialist roles remain the reasoning boundary;
 Python owns contracts, dependency graphs, gates, persistence and scheduling.
 
 `sensors.py` performs pure numerical, shape, finite-value, units, split, availability and

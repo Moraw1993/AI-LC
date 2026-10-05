@@ -641,7 +641,7 @@ def test_exercise_rolls_back_on_snapshot_publication_failure(course, monkeypatch
 
 def test_skills_install_conflicts_and_packaging(tmp_path):
     resources = files("ailearn").joinpath("resources/skills")
-    assert len(list(resources.iterdir())) == 6
+    assert len(list(resources.iterdir())) == 8
     for resource in resources.iterdir():
         header = resource.joinpath("SKILL.md").read_text("utf-8").split("---")[1]
         metadata = yaml.safe_load(header)
@@ -654,6 +654,14 @@ def test_skills_install_conflicts_and_packaging(tmp_path):
         Store(tmp_path).bootstrap()
     assert conflict.read_text("utf-8") == "Existing user skill"
     assert not (tmp_path / ".ai-learning").exists()
+
+    installed = tmp_path / "installed"
+    Store(installed).bootstrap()
+    assert (installed / ".ai-learning/agents/teaching-modes.md").is_file()
+    assert (installed / ".ai-learning/agents/styles/lecturer.md").is_file()
+    assert (installed / ".ai-learning/agents/styles/exercise_coach.md").is_file()
+    assert (installed / ".agents/skills/ai-lc-lecture/SKILL.md").is_file()
+    assert (installed / ".agents/skills/ai-lc-laboratory/SKILL.md").is_file()
 
 
 def test_full_cli_onboarding_and_course_recreation(tmp_path, capsys):
